@@ -93,6 +93,34 @@
       cursor: pointer;
     }
     .btn-rem:hover { background: #dc2626; }
+    .btn-princ {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-princ:hover { background: #e2e8f0; }
+    .btn-princ.ativo {
+      background: #16a34a;
+      color: #fff;
+      border-color: #15803d;
+    }
+    .btn-auto {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-auto:hover { background: #1d4ed8; }
     .badge {
       background: #e0f2fe;
       color: #0369a1;
@@ -150,12 +178,12 @@
     <div class="row">
       <div class="form-group">
         <label for="multiploInput">Múltiplo de Reembolso</label>
-        <input type="number" step="0.00001" id="multiploInput" value="1" placeholder="Ex: 1">
+        <input type="text" inputmode="decimal" id="multiploInput" value="1" placeholder="Ex: 1 ou 1,5">
       </div>
 
       <div class="form-group">
         <label for="valorUsInput">Valor US/URS/CRS (R$)</label>
-        <input type="number" step="0.00001" id="valorUsInput" placeholder="Ex: 2.02755">
+        <input type="text" inputmode="decimal" id="valorUsInput" placeholder="Ex: 2,02755">
       </div>
     </div>
 
@@ -172,16 +200,17 @@
     <div class="proc-list" id="listaDisponiveis"></div>
   </div>
 
-  <!-- Procedimentos Adicionados (Controle de Vezes) -->
+  <!-- Procedimentos Adicionados (Controle de Vezes e Seleção do Principal) -->
   <div class="card hidden" id="cardSelecionados">
     <h2>
-      <span>Procedimentos Adicionados</span>
-      <span class="badge" id="badgeSelecionados">0</span>
+      <span>Procedimentos Adicionados <span class="badge" id="badgeSelecionados">0</span></span>
+      <button type="button" class="btn-auto" id="btnAutoPrincipal" title="Selecionar automaticamente o de maior lucro">Auto (Maior Lucro)</button>
     </h2>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
+            <th class="center" style="width: 115px;">Principal</th>
             <th style="width: 100px;">Código</th>
             <th>Procedimento</th>
             <th class="center" style="width: 90px;">Vezes</th>
@@ -199,7 +228,7 @@
   <div class="card hidden" id="cardCalculo">
     <h2>
       <span>Prévia do Cálculo de Reembolso</span>
-      <span class="badge" id="badgePrincipalInfo">1º procedimento definido pelo maior lucro total</span>
+      <span class="badge" id="badgePrincipalInfo">Modo: Automático (Maior Lucro)</span>
     </h2>
 
     <div class="table-wrap">
@@ -267,15 +296,24 @@
   let todosProcedimentos = [];
   let procedimentosDoPlano = [];
   let procedimentosSelecionados = [];
+  let uidPrincipalManual = null; // null = automático pelo maior lucro
+
+  // Converte texto com vírgula ou ponto (ex: "2,02755" ou "2.02755") mantendo todas as casas decimais
+  function lerDecimal(str) {
+    if (!str) return 0;
+    const limpo = String(str).trim().replace(/\s+/g, "").replace(",", ".");
+    const num = parseFloat(limpo);
+    return isNaN(num) ? 0 : num;
+  }
 
   function formatarMoeda(valor) {
     return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   }
 
-  function formatarNumero(valor, casas = 2) {
+  function formatarNumero(valor, minCasas = 2, maxCasas = 6) {
     return Number(valor).toLocaleString("pt-BR", {
-      minimumFractionDigits: casas,
-      maximumFractionDigits: casas
+      minimumFractionDigits: minCasas,
+      maximumFractionDigits: maxCasas
     });
   }
 
@@ -319,6 +357,7 @@
     const cardDisp = document.getElementById("cardDisponiveis");
 
     procedimentosSelecionados = [];
+    uidPrincipalManual = null;
     document.getElementById("buscaProcInput").value = "";
 
     if (!plano) {
@@ -360,7 +399,7 @@
             <span class="proc-name">${p.nome}</span>
           </div>
           <div class="proc-meta">
-            QTD US/URS/CRS: <strong>${formatarNumero(p.qtd_us, 2)}</strong> &bull; Auxiliares: <strong>${p.quant_aux}</strong>
+            QTD US/URS/CRS: <strong>${formatarNumero(p.qtd_us, 2, 2)}</strong> &bull; Auxiliares: <strong>${p.quant_aux}</strong>
           </div>
         </div>
         <button type="button" class="btn-add" title="Adicionar ao Reembolso" onclick="adicionarAoReembolso('${p.id}')">+</button>
@@ -389,14 +428,28 @@
     atualizarTudo();
   };
 
+  window.definirPrincipalManual = (uid) => {
+    uidPrincipalManual = uid;
+    atualizarTudo();
+  };
+
   window.removerDoReembolso = (uid) => {
+    if (uidPrincipalManual === uid) {
+      uidPrincipalManual = null;
+    }
     procedimentosSelecionados = procedimentosSelecionados.filter(p => p.uid !== uid);
     atualizarTudo();
   };
 
-  // Calcula os valores de uma linha considerando a quantidade de auxiliares do procedimento
+  document.getElementById("btnAutoPrincipal").addEventListener("click", () => {
+    uidPrincipalManual = null;
+    atualizarTudo();
+  });
+
+  // Calcula os valores de uma linha mantendo precisão total das casas decimais
   function calcularLinha(proc, qtdCod, percentual, valorUs, multiplo) {
-    const base = qtdCod * Number(proc.qtd_us) * valorUs * multiplo;
+    const qtdUs = Number(proc.qtd_us);
+    const base = qtdCod * qtdUs * valorUs * multiplo;
     const cirurgiao = base * percentual;
     const aux1 = proc.quant_aux >= 1 ? cirurgiao * 0.30 : 0;
     const aux2 = proc.quant_aux >= 2 ? cirurgiao * 0.20 : 0;
@@ -408,7 +461,7 @@
       nome: proc.nome,
       qtd_cod: qtdCod,
       quant_aux: proc.quant_aux,
-      qtd_us: Number(proc.qtd_us),
+      qtd_us: qtdUs,
       valor_us: valorUs,
       multiplo: multiplo,
       percentual: percentual,
@@ -421,19 +474,17 @@
     };
   }
 
-  // Simula o Total Geral do relatório inteiro caso o candidato na posição `idxCandidato` seja o 1º (Principal)
+  // Simula o Total Geral do relatório inteiro caso o candidato `idxCandidato` seja o 1º (Principal)
   function simularTotalGeralComPrincipal(idxCandidato, valorUs, multiplo) {
     let totalGeral = 0;
 
     procedimentosSelecionados.forEach((proc, idx) => {
       if (idx === idxCandidato) {
-        // Como principal: repete 'vezes' linhas de QTD 1 (1ª = 100%, demais = 50%)
         for (let i = 0; i < proc.vezes; i++) {
           const pct = i === 0 ? 1.0 : 0.5;
           totalGeral += calcularLinha(proc, 1, pct, valorUs, multiplo).totalLinha;
         }
       } else {
-        // Como secundário: 1 linha única com QTD = vezes e percentual = 50%
         totalGeral += calcularLinha(proc, proc.vezes, 0.5, valorUs, multiplo).totalLinha;
       }
     });
@@ -441,12 +492,42 @@
     return totalGeral;
   }
 
-  function atualizarTudo() {
-    renderizarSelecionados();
-    renderizarTabelasCalculo();
+  // Define qual índice é o principal (manual ou automático)
+  function obterIndicePrincipal() {
+    if (procedimentosSelecionados.length === 0) return -1;
+
+    if (uidPrincipalManual !== null) {
+      const idxManual = procedimentosSelecionados.findIndex(p => p.uid === uidPrincipalManual);
+      if (idxManual !== -1) return idxManual;
+      uidPrincipalManual = null;
+    }
+
+    const valorUsReal = lerDecimal(document.getElementById("valorUsInput").value);
+    const multiploReal = lerDecimal(document.getElementById("multiploInput").value);
+    const valorUsRanking = valorUsReal > 0 ? valorUsReal : 1;
+    const multiploRanking = multiploReal > 0 ? multiploReal : 1;
+
+    let indicePrincipal = 0;
+    let maiorTotalGeral = -1;
+
+    procedimentosSelecionados.forEach((_, idx) => {
+      const totalCenario = simularTotalGeralComPrincipal(idx, valorUsRanking, multiploRanking);
+      if (totalCenario > maiorTotalGeral) {
+        maiorTotalGeral = totalCenario;
+        indicePrincipal = idx;
+      }
+    });
+
+    return indicePrincipal;
   }
 
-  function renderizarSelecionados() {
+  function atualizarTudo() {
+    const idxPrincipal = obterIndicePrincipal();
+    renderizarSelecionados(idxPrincipal);
+    renderizarTabelasCalculo(idxPrincipal);
+  }
+
+  function renderizarSelecionados(idxPrincipal) {
     const cardSel = document.getElementById("cardSelecionados");
     const tbody = document.getElementById("tabelaSelecionados");
     const badge = document.getElementById("badgeSelecionados");
@@ -459,69 +540,71 @@
     }
 
     cardSel.classList.remove("hidden");
-    tbody.innerHTML = procedimentosSelecionados.map(p => `
-      <tr>
-        <td><strong>${p.codigo}</strong></td>
-        <td>${p.nome}</td>
-        <td class="center">
-          <input
-            type="number"
-            min="1"
-            step="1"
-            class="input-vezes"
-            value="${p.vezes}"
-            onchange="atualizarVezes(${p.uid}, this.value)"
-            oninput="atualizarVezes(${p.uid}, this.value)"
-          >
-        </td>
-        <td class="num">${formatarNumero(p.qtd_us, 2)}</td>
-        <td class="center">${p.quant_aux}</td>
-        <td class="center"><button type="button" class="btn-rem" onclick="removerDoReembolso(${p.uid})">Remover</button></td>
-      </tr>
-    `).join("");
+    tbody.innerHTML = procedimentosSelecionados.map((p, idx) => {
+      const ehPrincipal = idx === idxPrincipal;
+      return `
+        <tr style="${ehPrincipal ? 'background: #f0fdf4;' : ''}">
+          <td class="center">
+            <button
+              type="button"
+              class="btn-princ ${ehPrincipal ? 'ativo' : ''}"
+              onclick="definirPrincipalManual(${p.uid})"
+            >
+              ${ehPrincipal ? '★ Principal' : 'Definir 1º'}
+            </button>
+          </td>
+          <td><strong>${p.codigo}</strong></td>
+          <td>${p.nome}</td>
+          <td class="center">
+            <input
+              type="number"
+              min="1"
+              step="1"
+              class="input-vezes"
+              value="${p.vezes}"
+              onchange="atualizarVezes(${p.uid}, this.value)"
+              oninput="atualizarVezes(${p.uid}, this.value)"
+            >
+          </td>
+          <td class="num">${formatarNumero(p.qtd_us, 2, 2)}</td>
+          <td class="center">${p.quant_aux}</td>
+          <td class="center"><button type="button" class="btn-rem" onclick="removerDoReembolso(${p.uid})">Remover</button></td>
+        </tr>
+      `;
+    }).join("");
   }
 
-  function renderizarTabelasCalculo() {
+  function renderizarTabelasCalculo(idxPrincipal) {
     const cardCalc = document.getElementById("cardCalculo");
     const tbodySol = document.getElementById("tabelaSolicitados");
     const tbodyRes = document.getElementById("tabelaResultados");
+    const badgeInfo = document.getElementById("badgePrincipalInfo");
 
-    if (procedimentosSelecionados.length === 0) {
+    if (procedimentosSelecionados.length === 0 || idxPrincipal === -1) {
       cardCalc.classList.add("hidden");
       return;
     }
 
     cardCalc.classList.remove("hidden");
+    badgeInfo.innerText = uidPrincipalManual !== null
+      ? "Modo: Principal selecionado manualmente"
+      : "Modo: Automático (Maior Lucro)";
 
-    const valorUsReal = parseFloat(document.getElementById("valorUsInput").value) || 0;
-    const multiploReal = parseFloat(document.getElementById("multiploInput").value) || 0;
-
-    // Usa 1 como base provisória apenas para ranking caso o usuário ainda não tenha digitado Valor US
+    const valorUsReal = lerDecimal(document.getElementById("valorUsInput").value);
+    const multiploReal = lerDecimal(document.getElementById("multiploInput").value);
     const valorUsRanking = valorUsReal > 0 ? valorUsReal : 1;
     const multiploRanking = multiploReal > 0 ? multiploReal : 1;
 
-    // 1. Escolhe o procedimento que maximiza o Total Geral do Reembolso (maior lucro)
-    let indicePrincipal = 0;
-    let maiorTotalGeral = -1;
-
-    procedimentosSelecionados.forEach((_, idx) => {
-      const totalCenario = simularTotalGeralComPrincipal(idx, valorUsRanking, multiploRanking);
-      if (totalCenario > maiorTotalGeral) {
-        maiorTotalGeral = totalCenario;
-        indicePrincipal = idx;
-      }
-    });
-
-    const principal = procedimentosSelecionados[indicePrincipal];
+    const principal = procedimentosSelecionados[idxPrincipal];
     const secundarios = procedimentosSelecionados
-      .filter((_, idx) => idx !== indicePrincipal)
+      .filter((_, idx) => idx !== idxPrincipal)
       .sort((a, b) => {
         const retA = calcularLinha(a, a.vezes, 0.5, valorUsRanking, multiploRanking).totalLinha;
         const retB = calcularLinha(b, b.vezes, 0.5, valorUsRanking, multiploRanking).totalLinha;
         return retB - retA;
       });
 
-    // 2. Monta as linhas finais com os valores reais digitados
+    // Monta as linhas finais
     const linhasCalculadas = [];
 
     for (let i = 0; i < principal.vezes; i++) {
@@ -537,7 +620,7 @@
       linhasCalculadas.push(linha);
     });
 
-    // 3. Renderiza Tabela 1: Procedimentos Solicitados
+    // Renderiza Tabela 1: Procedimentos Solicitados
     tbodySol.innerHTML = linhasCalculadas.map(l => `
       <tr>
         <td><strong>${l.codigo}</strong></td>
@@ -547,14 +630,14 @@
         </td>
         <td class="center"><strong>${l.qtd_cod}</strong></td>
         <td class="center">${l.quant_aux}</td>
-        <td class="num">${formatarNumero(l.qtd_us, 2)}</td>
-        <td class="num">${formatarNumero(l.valor_us, 5)}</td>
-        <td class="center">${formatarNumero(l.multiplo, 2)}</td>
+        <td class="num">${formatarNumero(l.qtd_us, 2, 2)}</td>
+        <td class="num">${formatarNumero(l.valor_us, 2, 6)}</td>
+        <td class="center">${formatarNumero(l.multiplo, 2, 4)}</td>
         <td class="center"><strong>${(l.percentual * 100).toFixed(0)}%</strong></td>
       </tr>
     `).join("");
 
-    // 4. Soma os totais e renderiza Tabela 2: Cálculo Exato
+    // Soma os totais e renderiza Tabela 2: Cálculo Exato
     let totCirurgiao = 0;
     let totAux1 = 0;
     let totAux2 = 0;
@@ -598,8 +681,8 @@
 
   document.getElementById("planoSelect").addEventListener("change", aoMudarPlano);
   document.getElementById("buscaProcInput").addEventListener("input", renderizarDisponiveis);
-  document.getElementById("valorUsInput").addEventListener("input", renderizarTabelasCalculo);
-  document.getElementById("multiploInput").addEventListener("input", renderizarTabelasCalculo);
+  document.getElementById("valorUsInput").addEventListener("input", atualizarTudo);
+  document.getElementById("multiploInput").addEventListener("input", atualizarTudo);
 
   inicializarDados();
 </script>

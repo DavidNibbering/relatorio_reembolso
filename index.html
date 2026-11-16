@@ -7,22 +7,21 @@
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: #f4f6f8; color: #1e293b; margin: 0; padding: 24px 16px; }
-    .container { max-width: 920px; margin: 0 auto; }
-    .card { background: #fff; border-radius: 10px; padding: 26px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
-    h1 { font-size: 1.45rem; margin: 0 0 22px 0; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; }
-    h2 { font-size: 1.1rem; margin: 0 0 14px 0; color: #0f172a; display: flex; align-items: center; justify-content: space-between; }
-    .form-group { display: flex; flex-direction: column; margin-bottom: 16px; }
+    .container { max-width: 1180px; margin: 0 auto; }
+    .card { background: #fff; border-radius: 10px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    h1 { font-size: 1.45rem; margin: 0 0 20px 0; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; }
+    h2 { font-size: 1.08rem; margin: 0 0 14px 0; color: #0f172a; display: flex; align-items: center; justify-content: space-between; }
+    .form-group { display: flex; flex-direction: column; margin-bottom: 14px; }
     .row { display: flex; gap: 16px; flex-wrap: wrap; }
     .row .form-group { flex: 1; min-width: 200px; }
-    label { font-size: 0.88rem; font-weight: 600; margin-bottom: 6px; color: #334155; }
+    label { font-size: 0.86rem; font-weight: 600; margin-bottom: 5px; color: #334155; }
     input, select {
-      padding: 10px 12px;
+      padding: 9px 12px;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
-      font-size: 0.95rem;
+      font-size: 0.94rem;
       background: #fff;
       color: #0f172a;
-      transition: border-color 0.2s;
     }
     input:focus, select:focus { outline: none; border-color: #2563eb; }
     .status { font-size: 0.85rem; margin-top: 6px; color: #64748b; }
@@ -30,9 +29,9 @@
     .hidden { display: none; }
 
     /* Lista de procedimentos disponíveis */
-    .search-box { width: 100%; margin-bottom: 12px; }
+    .search-box { width: 100%; margin-bottom: 10px; }
     .proc-list {
-      max-height: 290px;
+      max-height: 250px;
       overflow-y: auto;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
@@ -42,25 +41,24 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 10px 14px;
+      padding: 9px 14px;
       border-bottom: 1px solid #f1f5f9;
     }
     .proc-item:last-child { border-bottom: none; }
     .proc-item:hover { background: #f8fafc; }
     .proc-info { flex: 1; }
-    .proc-code { font-weight: 700; color: #2563eb; font-size: 0.88rem; margin-right: 6px; }
-    .proc-name { font-size: 0.92rem; color: #1e293b; }
-    .proc-meta { font-size: 0.8rem; color: #64748b; margin-top: 2px; }
+    .proc-code { font-weight: 700; color: #2563eb; font-size: 0.86rem; margin-right: 6px; }
+    .proc-name { font-size: 0.9rem; color: #1e293b; }
+    .proc-meta { font-size: 0.78rem; color: #64748b; margin-top: 2px; }
     .btn-add {
       background: #10b981;
       color: #fff;
       border: none;
-      width: 34px;
-      height: 34px;
+      width: 32px;
+      height: 32px;
       border-radius: 6px;
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       font-weight: 700;
-      line-height: 1;
       cursor: pointer;
       flex-shrink: 0;
       display: flex;
@@ -69,25 +67,28 @@
     }
     .btn-add:hover { background: #059669; }
 
-    /* Tabela de selecionados */
-    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 8px; }
-    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
-    th { background: #f8fafc; font-weight: 600; color: #475569; }
+    /* Tabelas */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; margin-top: 6px; }
+    th, td { text-align: left; padding: 9px 8px; border: 1px solid #e2e8f0; vertical-align: middle; }
+    th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; text-transform: uppercase; }
+    .num { text-align: right; white-space: nowrap; }
+    .center { text-align: center; }
     .input-vezes {
-      width: 72px;
-      padding: 6px 8px;
+      width: 68px;
+      padding: 5px 6px;
       text-align: center;
       font-weight: 600;
       border: 1px solid #cbd5e1;
-      border-radius: 6px;
+      border-radius: 5px;
     }
     .btn-rem {
       background: #ef4444;
       color: #fff;
       border: none;
-      padding: 6px 10px;
+      padding: 5px 9px;
       border-radius: 5px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 600;
       cursor: pointer;
     }
@@ -100,6 +101,30 @@
       padding: 3px 10px;
       border-radius: 999px;
     }
+    .tag-principal {
+      display: inline-block;
+      background: #dcfce7;
+      color: #166534;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+    }
+    .row-total td {
+      background: #f8fafc;
+      font-weight: 700;
+      color: #0f172a;
+      border-top: 2px solid #94a3b8;
+    }
+    .row-total-geral td {
+      background: #eff6ff;
+      font-weight: 800;
+      font-size: 0.96rem;
+      color: #1e3a8a;
+      border-top: 2px solid #2563eb;
+    }
+    .sub-zero { color: #94a3b8; }
   </style>
 </head>
 <body>
@@ -125,12 +150,12 @@
     <div class="row">
       <div class="form-group">
         <label for="multiploInput">Múltiplo de Reembolso</label>
-        <input type="number" step="0.01" id="multiploInput" placeholder="Ex: 2.00">
+        <input type="number" step="0.00001" id="multiploInput" value="1" placeholder="Ex: 1">
       </div>
 
       <div class="form-group">
         <label for="valorUsInput">Valor US/URS/CRS (R$)</label>
-        <input type="number" step="0.01" id="valorUsInput" placeholder="Ex: 0.58">
+        <input type="number" step="0.00001" id="valorUsInput" placeholder="Ex: 2.02755">
       </div>
     </div>
 
@@ -147,25 +172,76 @@
     <div class="proc-list" id="listaDisponiveis"></div>
   </div>
 
-  <!-- Procedimentos Adicionados ao Reembolso -->
+  <!-- Procedimentos Adicionados (Controle de Vezes) -->
   <div class="card hidden" id="cardSelecionados">
     <h2>
-      <span>Procedimentos Adicionados ao Reembolso</span>
+      <span>Procedimentos Adicionados</span>
       <span class="badge" id="badgeSelecionados">0</span>
     </h2>
-    <table>
-      <thead>
-        <tr>
-          <th style="width: 100px;">Código</th>
-          <th>Procedimento</th>
-          <th style="width: 95px;">Vezes</th>
-          <th style="width: 135px;">QTD US/URS/CRS</th>
-          <th style="width: 90px;">Auxiliares</th>
-          <th style="width: 80px;">Ação</th>
-        </tr>
-      </thead>
-      <tbody id="tabelaSelecionados"></tbody>
-    </table>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 100px;">Código</th>
+            <th>Procedimento</th>
+            <th class="center" style="width: 90px;">Vezes</th>
+            <th class="num" style="width: 130px;">QTD US/URS/CRS</th>
+            <th class="center" style="width: 95px;">Auxiliares</th>
+            <th class="center" style="width: 85px;">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaSelecionados"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Prévia das Tabelas Calculadas (Espelho da Planilha) -->
+  <div class="card hidden" id="cardCalculo">
+    <h2>
+      <span>Prévia do Cálculo de Reembolso</span>
+      <span class="badge" id="badgePrincipalInfo">Ordenado pelo maior retorno</span>
+    </h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th colspan="8" style="background: #e2e8f0; text-align: center;">PROCEDIMENTO(S) SOLICITADO(S)</th>
+          </tr>
+          <tr>
+            <th>Código</th>
+            <th>Descrição</th>
+            <th class="center">QTD COD</th>
+            <th class="center">QTD AUX</th>
+            <th class="num">QTD US/URS/CRS</th>
+            <th class="num">VALOR US</th>
+            <th class="center">MÚLTIPLO</th>
+            <th class="center">(%)</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaSolicitados"></tbody>
+      </table>
+    </div>
+
+    <div class="table-wrap" style="margin-top: 22px;">
+      <table>
+        <thead>
+          <tr>
+            <th colspan="7" style="background: #dbeafe; color: #1e3a8a; text-align: center;">CÁLCULO EXATO DO REEMBOLSO</th>
+          </tr>
+          <tr>
+            <th>Código</th>
+            <th>Descrição</th>
+            <th class="num">Valor c/ %</th>
+            <th class="num">Cirurgião</th>
+            <th class="num">Auxiliar 1 (30%)</th>
+            <th class="num">Auxiliar 2 (20%)</th>
+            <th class="num">Instrumentador (10%)</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaResultados"></tbody>
+      </table>
+    </div>
   </div>
 
 </div>
@@ -191,6 +267,17 @@
   let todosProcedimentos = [];
   let procedimentosDoPlano = [];
   let procedimentosSelecionados = [];
+
+  function formatarMoeda(valor) {
+    return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  }
+
+  function formatarNumero(valor, casas = 2) {
+    return Number(valor).toLocaleString("pt-BR", {
+      minimumFractionDigits: casas,
+      maximumFractionDigits: casas
+    });
+  }
 
   async function inicializarDados() {
     const select = document.getElementById("planoSelect");
@@ -230,14 +317,13 @@
   function aoMudarPlano() {
     const plano = document.getElementById("planoSelect").value;
     const cardDisp = document.getElementById("cardDisponiveis");
-    const cardSel = document.getElementById("cardSelecionados");
 
     procedimentosSelecionados = [];
     document.getElementById("buscaProcInput").value = "";
 
     if (!plano) {
       cardDisp.classList.add("hidden");
-      cardSel.classList.add("hidden");
+      atualizarTudo();
       return;
     }
 
@@ -247,7 +333,7 @@
 
     cardDisp.classList.remove("hidden");
     renderizarDisponiveis();
-    renderizarSelecionados();
+    atualizarTudo();
   }
 
   function renderizarDisponiveis() {
@@ -274,7 +360,7 @@
             <span class="proc-name">${p.nome}</span>
           </div>
           <div class="proc-meta">
-            QTD US/URS/CRS: <strong>${Number(p.qtd_us).toFixed(2)}</strong> &bull; Auxiliares: <strong>${p.quant_aux}</strong>
+            QTD US/URS/CRS: <strong>${formatarNumero(p.qtd_us, 2)}</strong> &bull; Auxiliares: <strong>${p.quant_aux}</strong>
           </div>
         </div>
         <button type="button" class="btn-add" title="Adicionar ao Reembolso" onclick="adicionarAoReembolso('${p.id}')">+</button>
@@ -292,7 +378,7 @@
     } else {
       procedimentosSelecionados.push({ ...item, vezes: 1, uid: Date.now() + Math.random() });
     }
-    renderizarSelecionados();
+    atualizarTudo();
   };
 
   window.atualizarVezes = (uid, valor) => {
@@ -300,12 +386,55 @@
     if (!item) return;
     const num = parseInt(valor, 10);
     item.vezes = num >= 1 ? num : 1;
+    atualizarTudo();
   };
 
   window.removerDoReembolso = (uid) => {
     procedimentosSelecionados = procedimentosSelecionados.filter(p => p.uid !== uid);
-    renderizarSelecionados();
+    atualizarTudo();
   };
+
+  // Calcula os valores de uma linha considerando a quantidade de auxiliares do procedimento
+  function calcularLinha(proc, qtdCod, percentual, valorUs, multiplo) {
+    const base = qtdCod * Number(proc.qtd_us) * valorUs * multiplo;
+    const cirurgiao = base * percentual;
+    const aux1 = proc.quant_aux >= 1 ? cirurgiao * 0.30 : 0;
+    const aux2 = proc.quant_aux >= 2 ? cirurgiao * 0.20 : 0;
+    const instrumentador = cirurgiao * 0.10;
+    const totalLinha = cirurgiao + aux1 + aux2 + instrumentador;
+
+    return {
+      codigo: proc.codigo,
+      nome: proc.nome,
+      qtd_cod: qtdCod,
+      quant_aux: proc.quant_aux,
+      qtd_us: Number(proc.qtd_us),
+      valor_us: valorUs,
+      multiplo: multiplo,
+      percentual: percentual,
+      valor_aplicado: cirurgiao,
+      cirurgiao,
+      aux1,
+      aux2,
+      instrumentador,
+      totalLinha
+    };
+  }
+
+  // Descobre qual procedimento gera o maior retorno total ao assumir o topo (1ª linha 100%, demais 50%)
+  function calcularRetornoComoPrincipal(proc, valorUs, multiplo) {
+    let soma = 0;
+    for (let i = 0; i < proc.vezes; i++) {
+      const pct = i === 0 ? 1.0 : 0.5;
+      soma += calcularLinha(proc, 1, pct, valorUs, multiplo).totalLinha;
+    }
+    return soma;
+  }
+
+  function atualizarTudo() {
+    renderizarSelecionados();
+    renderizarTabelasCalculo();
+  }
 
   function renderizarSelecionados() {
     const cardSel = document.getElementById("cardSelecionados");
@@ -324,7 +453,7 @@
       <tr>
         <td><strong>${p.codigo}</strong></td>
         <td>${p.nome}</td>
-        <td>
+        <td class="center">
           <input
             type="number"
             min="1"
@@ -332,17 +461,133 @@
             class="input-vezes"
             value="${p.vezes}"
             onchange="atualizarVezes(${p.uid}, this.value)"
+            oninput="atualizarVezes(${p.uid}, this.value)"
           >
         </td>
-        <td>${Number(p.qtd_us).toFixed(2)}</td>
-        <td>${p.quant_aux}</td>
-        <td><button type="button" class="btn-rem" onclick="removerDoReembolso(${p.uid})">Remover</button></td>
+        <td class="num">${formatarNumero(p.qtd_us, 2)}</td>
+        <td class="center">${p.quant_aux}</td>
+        <td class="center"><button type="button" class="btn-rem" onclick="removerDoReembolso(${p.uid})">Remover</button></td>
       </tr>
     `).join("");
   }
 
+  function renderizarTabelasCalculo() {
+    const cardCalc = document.getElementById("cardCalculo");
+    const tbodySol = document.getElementById("tabelaSolicitados");
+    const tbodyRes = document.getElementById("tabelaResultados");
+
+    if (procedimentosSelecionados.length === 0) {
+      cardCalc.classList.add("hidden");
+      return;
+    }
+
+    cardCalc.classList.remove("hidden");
+
+    const valorUs = parseFloat(document.getElementById("valorUsInput").value) || 0;
+    const multiplo = parseFloat(document.getElementById("multiploInput").value) || 0;
+
+    // 1. Identifica qual procedimento gera o maior retorno total como principal
+    let indicePrincipal = 0;
+    let maiorRetorno = -1;
+
+    procedimentosSelecionados.forEach((proc, idx) => {
+      const retorno = calcularRetornoComoPrincipal(proc, valorUs, multiplo);
+      if (retorno > maiorRetorno) {
+        maiorRetorno = retorno;
+        indicePrincipal = idx;
+      }
+    });
+
+    const principal = procedimentosSelecionados[indicePrincipal];
+    const secundarios = procedimentosSelecionados
+      .filter((_, idx) => idx !== indicePrincipal)
+      .sort((a, b) => {
+        const retA = calcularLinha(a, a.vezes, 0.5, valorUs, multiplo).totalLinha;
+        const retB = calcularLinha(b, b.vezes, 0.5, valorUs, multiplo).totalLinha;
+        return retB - retA;
+      });
+
+    // 2. Monta as linhas finais:
+    // - Principal: repete 'vezes' linhas com QTD COD = 1 (1ª = 100%, restantes = 50%)
+    // - Secundários: 1 linha cada com QTD COD = vezes e percentual = 50%
+    const linhasCalculadas = [];
+
+    for (let i = 0; i < principal.vezes; i++) {
+      const pct = i === 0 ? 1.0 : 0.5;
+      const linha = calcularLinha(principal, 1, pct, valorUs, multiplo);
+      linha.isPrincipal = true;
+      linhasCalculadas.push(linha);
+    }
+
+    secundarios.forEach((proc) => {
+      const linha = calcularLinha(proc, proc.vezes, 0.5, valorUs, multiplo);
+      linha.isPrincipal = false;
+      linhasCalculadas.push(linha);
+    });
+
+    // 3. Renderiza Tabela 1: Procedimentos Solicitados
+    tbodySol.innerHTML = linhasCalculadas.map(l => `
+      <tr>
+        <td><strong>${l.codigo}</strong></td>
+        <td>
+          ${l.nome}
+          ${l.isPrincipal ? '<span class="tag-principal">PRINCIPAL</span>' : ''}
+        </td>
+        <td class="center"><strong>${l.qtd_cod}</strong></td>
+        <td class="center">${l.quant_aux}</td>
+        <td class="num">${formatarNumero(l.qtd_us, 2)}</td>
+        <td class="num">${formatarNumero(l.valor_us, 5)}</td>
+        <td class="center">${formatarNumero(l.multiplo, 2)}</td>
+        <td class="center"><strong>${(l.percentual * 100).toFixed(0)}%</strong></td>
+      </tr>
+    `).join("");
+
+    // 4. Soma os totais e renderiza Tabela 2: Cálculo Exato
+    let totCirurgiao = 0;
+    let totAux1 = 0;
+    let totAux2 = 0;
+    let totInst = 0;
+
+    const htmlLinhasRes = linhasCalculadas.map(l => {
+      totCirurgiao += l.cirurgiao;
+      totAux1 += l.aux1;
+      totAux2 += l.aux2;
+      totInst += l.instrumentador;
+
+      return `
+        <tr>
+          <td><strong>${l.codigo}</strong></td>
+          <td>${l.nome}</td>
+          <td class="num">${formatarMoeda(l.valor_aplicado)}</td>
+          <td class="num">${formatarMoeda(l.cirurgiao)}</td>
+          <td class="num ${l.aux1 === 0 ? 'sub-zero' : ''}">${formatarMoeda(l.aux1)}</td>
+          <td class="num ${l.aux2 === 0 ? 'sub-zero' : ''}">${formatarMoeda(l.aux2)}</td>
+          <td class="num">${formatarMoeda(l.instrumentador)}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const totalGeral = totCirurgiao + totAux1 + totAux2 + totInst;
+
+    tbodyRes.innerHTML = htmlLinhasRes + `
+      <tr class="row-total">
+        <td colspan="3" class="num">TOTAL POR EQUIPE</td>
+        <td class="num">${formatarMoeda(totCirurgiao)}</td>
+        <td class="num">${formatarMoeda(totAux1)}</td>
+        <td class="num">${formatarMoeda(totAux2)}</td>
+        <td class="num">${formatarMoeda(totInst)}</td>
+      </tr>
+      <tr class="row-total-geral">
+        <td colspan="6" class="num">TOTAL GERAL DO REEMBOLSO</td>
+        <td class="num">${formatarMoeda(totalGeral)}</td>
+      </tr>
+    `;
+  }
+
   document.getElementById("planoSelect").addEventListener("change", aoMudarPlano);
   document.getElementById("buscaProcInput").addEventListener("input", renderizarDisponiveis);
+  document.getElementById("valorUsInput").addEventListener("input", renderizarTabelasCalculo);
+  document.getElementById("multiploInput").addEventListener("input", renderizarTabelasCalculo);
 
   inicializarDados();
 </script>

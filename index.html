@@ -3,67 +3,176 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Procedimentos por Plano de Saúde</title>
+  <title>Gerar PDF de Reembolso</title>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: #f4f6f8; color: #1e293b; margin: 0; padding: 20px; }
-    .container { max-width: 960px; margin: 0 auto; }
-    .card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    h1 { font-size: 1.35rem; margin: 0 0 16px 0; color: #0f172a; }
-    .toolbar { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 18px; }
-    .field { display: flex; flex-direction: column; }
-    label { font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: #475569; }
-    select, input { padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem; background: #fff; }
-    select { min-width: 240px; font-weight: 500; }
-    input { min-width: 280px; }
-    .badge { display: inline-block; background: #e0f2fe; color: #0369a1; font-size: 0.8rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; margin-left: 8px; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
-    th, td { text-align: left; padding: 11px 10px; border-bottom: 1px solid #e2e8f0; }
-    th { background: #f8fafc; font-weight: 600; color: #475569; }
-    tr:hover td { background: #f8fafc; }
+    body { background: #f4f6f8; color: #1e293b; margin: 0; padding: 24px 16px; }
+    .container { max-width: 920px; margin: 0 auto; }
+    .card { background: #fff; border-radius: 10px; padding: 26px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    h1 { font-size: 1.45rem; margin: 0 0 22px 0; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; }
+    h2 { font-size: 1.1rem; margin: 0 0 14px 0; color: #0f172a; display: flex; align-items: center; justify-content: space-between; }
+    .form-group { display: flex; flex-direction: column; margin-bottom: 16px; }
+    .row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .row .form-group { flex: 1; min-width: 200px; }
+    label { font-size: 0.88rem; font-weight: 600; margin-bottom: 6px; color: #334155; }
+    input, select {
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      background: #fff;
+      color: #0f172a;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus { outline: none; border-color: #2563eb; }
+    .status { font-size: 0.85rem; margin-top: 6px; color: #64748b; }
     .erro { color: #dc2626; font-weight: 600; }
+    .hidden { display: none; }
+
+    /* Lista de procedimentos disponíveis */
+    .search-box { width: 100%; margin-bottom: 12px; }
+    .proc-list {
+      max-height: 290px;
+      overflow-y: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+    .proc-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .proc-item:last-child { border-bottom: none; }
+    .proc-item:hover { background: #f8fafc; }
+    .proc-info { flex: 1; }
+    .proc-code { font-weight: 700; color: #2563eb; font-size: 0.88rem; margin-right: 6px; }
+    .proc-name { font-size: 0.92rem; color: #1e293b; }
+    .proc-meta { font-size: 0.8rem; color: #64748b; margin-top: 2px; }
+    .btn-add {
+      background: #10b981;
+      color: #fff;
+      border: none;
+      width: 34px;
+      height: 34px;
+      border-radius: 6px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-add:hover { background: #059669; }
+
+    /* Tabela de selecionados */
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 8px; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+    th { background: #f8fafc; font-weight: 600; color: #475569; }
+    .input-vezes {
+      width: 72px;
+      padding: 6px 8px;
+      text-align: center;
+      font-weight: 600;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+    }
+    .btn-rem {
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 5px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-rem:hover { background: #dc2626; }
+    .badge {
+      background: #e0f2fe;
+      color: #0369a1;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <div class="card">
-    <h1>Tabela de Procedimentos <span class="badge" id="contadorBadge">0 itens</span></h1>
 
-    <div class="toolbar">
-      <div class="field">
-        <label for="planoSelect">Selecione o Plano de Saúde</label>
-        <select id="planoSelect">
-          <option value="Bradesco Saúde">Bradesco Saúde</option>
-          <option value="Amil">Amil</option>
-        </select>
+  <!-- Dados Principais do Reembolso -->
+  <div class="card">
+    <h1>Gerar PDF de Reembolso</h1>
+
+    <div class="form-group">
+      <label for="planoSelect">Plano de Saúde</label>
+      <select id="planoSelect">
+        <option value="">Carregando planos...</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="pacienteInput">Nome Completo do Paciente</label>
+      <input type="text" id="pacienteInput" placeholder="Digite o nome completo do paciente">
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label for="multiploInput">Múltiplo de Reembolso</label>
+        <input type="number" step="0.01" id="multiploInput" placeholder="Ex: 2.00">
       </div>
 
-      <div class="field" style="flex: 1;">
-        <label for="buscaInput">Buscar procedimento</label>
-        <input type="text" id="buscaInput" placeholder="Filtrar por código ou nome...">
+      <div class="form-group">
+        <label for="valorUsInput">Valor US/URS/CRS (R$)</label>
+        <input type="number" step="0.01" id="valorUsInput" placeholder="Ex: 0.58">
       </div>
     </div>
 
+    <div class="status" id="statusMsg"></div>
+  </div>
+
+  <!-- Lista de Procedimentos Disponíveis no Plano Selecionado -->
+  <div class="card hidden" id="cardDisponiveis">
+    <h2>
+      <span>Procedimentos Disponíveis</span>
+      <span class="badge" id="badgeDisponiveis">0</span>
+    </h2>
+    <input type="text" id="buscaProcInput" class="search-box" placeholder="Filtrar procedimento por código ou nome...">
+    <div class="proc-list" id="listaDisponiveis"></div>
+  </div>
+
+  <!-- Procedimentos Adicionados ao Reembolso -->
+  <div class="card hidden" id="cardSelecionados">
+    <h2>
+      <span>Procedimentos Adicionados ao Reembolso</span>
+      <span class="badge" id="badgeSelecionados">0</span>
+    </h2>
     <table>
       <thead>
         <tr>
-          <th style="width: 110px;">Código</th>
+          <th style="width: 100px;">Código</th>
           <th>Procedimento</th>
-          <th style="width: 150px;">QTD US/URS/CRS</th>
-          <th style="width: 110px;">Auxiliares</th>
+          <th style="width: 95px;">Vezes</th>
+          <th style="width: 135px;">QTD US/URS/CRS</th>
+          <th style="width: 90px;">Auxiliares</th>
+          <th style="width: 80px;">Ação</th>
         </tr>
       </thead>
-      <tbody id="tabelaCorpo">
-        <tr><td colspan="4">Carregando procedimentos...</td></tr>
-      </tbody>
+      <tbody id="tabelaSelecionados"></tbody>
     </table>
   </div>
+
 </div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { initializeFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { initializeFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyC4XH3VcBpGiJfRVAN4YErIG0dGR2d1s6E",
@@ -79,64 +188,163 @@
     experimentalForceLongPolling: true
   });
 
-  let listaAtual = [];
+  let todosProcedimentos = [];
+  let procedimentosDoPlano = [];
+  let procedimentosSelecionados = [];
 
-  async function carregarProcedimentos() {
-    const planoSelecionado = document.getElementById("planoSelect").value;
-    const tbody = document.getElementById("tabelaCorpo");
-    const badge = document.getElementById("contadorBadge");
-
-    tbody.innerHTML = `<tr><td colspan="4">Carregando procedimentos de ${planoSelecionado}...</td></tr>`;
-    badge.innerText = "...";
+  async function inicializarDados() {
+    const select = document.getElementById("planoSelect");
+    const status = document.getElementById("statusMsg");
 
     try {
-      const q = query(collection(db, "procedimentos"), where("plano", "==", planoSelecionado));
-      const snap = await getDocs(q);
+      const snap = await getDocs(collection(db, "procedimentos"));
+      const planosUnicos = new Set();
+      todosProcedimentos = [];
 
-      listaAtual = [];
       snap.forEach((docSnap) => {
-        listaAtual.push({ id: docSnap.id, ...docSnap.data() });
+        const dados = docSnap.data();
+        if (dados.plano) {
+          planosUnicos.add(dados.plano);
+          todosProcedimentos.push({ id: docSnap.id, ...dados });
+        }
       });
 
-      listaAtual.sort((a, b) => a.nome.localeCompare(b.nome));
-      renderizarTabela();
+      const listaPlanos = Array.from(planosUnicos).sort();
+
+      if (listaPlanos.length === 0) {
+        select.innerHTML = `<option value="">Nenhum plano cadastrado no Firebase</option>`;
+        return;
+      }
+
+      select.innerHTML = `<option value="">Selecione um plano de saúde...</option>` +
+        listaPlanos.map(plano => `<option value="${plano}">${plano}</option>`).join("");
+
     } catch (e) {
       console.error(e);
-      badge.innerText = "Erro";
-      tbody.innerHTML = `<tr><td colspan="4" class="erro">Erro ao carregar do Firebase: ${e.message}</td></tr>`;
+      select.innerHTML = `<option value="">Erro ao carregar planos</option>`;
+      status.className = "status erro";
+      status.innerText = "Erro ao conectar com o Firebase: " + e.message;
     }
   }
 
-  function renderizarTabela() {
-    const termo = document.getElementById("buscaInput").value.toLowerCase();
-    const tbody = document.getElementById("tabelaCorpo");
-    const badge = document.getElementById("contadorBadge");
+  function aoMudarPlano() {
+    const plano = document.getElementById("planoSelect").value;
+    const cardDisp = document.getElementById("cardDisponiveis");
+    const cardSel = document.getElementById("cardSelecionados");
 
-    const filtrados = listaAtual.filter(p =>
-      p.codigo.toLowerCase().includes(termo) || p.nome.toLowerCase().includes(termo)
-    );
+    procedimentosSelecionados = [];
+    document.getElementById("buscaProcInput").value = "";
 
-    badge.innerText = `${filtrados.length} ${filtrados.length === 1 ? "item" : "itens"}`;
-
-    if (filtrados.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4">Nenhum procedimento encontrado para este plano.</td></tr>`;
+    if (!plano) {
+      cardDisp.classList.add("hidden");
+      cardSel.classList.add("hidden");
       return;
     }
 
-    tbody.innerHTML = filtrados.map(p => `
+    procedimentosDoPlano = todosProcedimentos
+      .filter(p => p.plano === plano)
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+
+    cardDisp.classList.remove("hidden");
+    renderizarDisponiveis();
+    renderizarSelecionados();
+  }
+
+  function renderizarDisponiveis() {
+    const termo = document.getElementById("buscaProcInput").value.toLowerCase();
+    const container = document.getElementById("listaDisponiveis");
+    const badge = document.getElementById("badgeDisponiveis");
+
+    const filtrados = procedimentosDoPlano.filter(p =>
+      p.codigo.toLowerCase().includes(termo) || p.nome.toLowerCase().includes(termo)
+    );
+
+    badge.innerText = filtrados.length;
+
+    if (filtrados.length === 0) {
+      container.innerHTML = `<div style="padding: 14px; color: #64748b; font-size: 0.9rem;">Nenhum procedimento encontrado.</div>`;
+      return;
+    }
+
+    container.innerHTML = filtrados.map(p => `
+      <div class="proc-item">
+        <div class="proc-info">
+          <div>
+            <span class="proc-code">${p.codigo}</span>
+            <span class="proc-name">${p.nome}</span>
+          </div>
+          <div class="proc-meta">
+            QTD US/URS/CRS: <strong>${Number(p.qtd_us).toFixed(2)}</strong> &bull; Auxiliares: <strong>${p.quant_aux}</strong>
+          </div>
+        </div>
+        <button type="button" class="btn-add" title="Adicionar ao Reembolso" onclick="adicionarAoReembolso('${p.id}')">+</button>
+      </div>
+    `).join("");
+  }
+
+  window.adicionarAoReembolso = (id) => {
+    const item = procedimentosDoPlano.find(p => p.id === id);
+    if (!item) return;
+
+    const existente = procedimentosSelecionados.find(p => p.id === id);
+    if (existente) {
+      existente.vezes += 1;
+    } else {
+      procedimentosSelecionados.push({ ...item, vezes: 1, uid: Date.now() + Math.random() });
+    }
+    renderizarSelecionados();
+  };
+
+  window.atualizarVezes = (uid, valor) => {
+    const item = procedimentosSelecionados.find(p => p.uid === uid);
+    if (!item) return;
+    const num = parseInt(valor, 10);
+    item.vezes = num >= 1 ? num : 1;
+  };
+
+  window.removerDoReembolso = (uid) => {
+    procedimentosSelecionados = procedimentosSelecionados.filter(p => p.uid !== uid);
+    renderizarSelecionados();
+  };
+
+  function renderizarSelecionados() {
+    const cardSel = document.getElementById("cardSelecionados");
+    const tbody = document.getElementById("tabelaSelecionados");
+    const badge = document.getElementById("badgeSelecionados");
+
+    badge.innerText = procedimentosSelecionados.length;
+
+    if (procedimentosSelecionados.length === 0) {
+      cardSel.classList.add("hidden");
+      return;
+    }
+
+    cardSel.classList.remove("hidden");
+    tbody.innerHTML = procedimentosSelecionados.map(p => `
       <tr>
         <td><strong>${p.codigo}</strong></td>
         <td>${p.nome}</td>
+        <td>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            class="input-vezes"
+            value="${p.vezes}"
+            onchange="atualizarVezes(${p.uid}, this.value)"
+          >
+        </td>
         <td>${Number(p.qtd_us).toFixed(2)}</td>
         <td>${p.quant_aux}</td>
+        <td><button type="button" class="btn-rem" onclick="removerDoReembolso(${p.uid})">Remover</button></td>
       </tr>
     `).join("");
   }
 
-  document.getElementById("planoSelect").addEventListener("change", carregarProcedimentos);
-  document.getElementById("buscaInput").addEventListener("input", renderizarTabela);
+  document.getElementById("planoSelect").addEventListener("change", aoMudarPlano);
+  document.getElementById("buscaProcInput").addEventListener("input", renderizarDisponiveis);
 
-  carregarProcedimentos();
+  inicializarDados();
 </script>
 </body>
 </html>

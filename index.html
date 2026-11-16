@@ -24,6 +24,7 @@
     th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0; }
     th { background: #f8fafc; font-weight: 600; color: #475569; }
     .status { font-size: 0.85rem; margin-top: 8px; color: #059669; font-weight: 600; }
+    .erro { color: #dc2626; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -103,7 +104,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { initializeFirestore, collection, doc, setDoc, getDocs, deleteDoc, writeBatch, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   // =========================================================
   // COLE SUAS CREDENCIAIS DO FIREBASE AQUI:
@@ -118,9 +119,12 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  
+  // Força comunicação HTTP estável (evita erro de servidor offline/WebSocket)
+  const db = initializeFirestore(app, {
+    experimentalForceLongPolling: true
+  });
 
-  // Dados exatos da planilha PROCEDIMENTOS PLANOS.xlsx (aba BRADESCO)
   const dadosIniciaisBradesco = [
     { codigo: "30208033", nome: "OSTEOTOMIA ALVEOLO PALATINA", qtd_us: 1049.88, quant_aux: 1 },
     { codigo: "30209021", nome: "OSTEOPLASTIA DA MANDÍBULA", qtd_us: 883.83, quant_aux: 2 },
@@ -147,14 +151,14 @@
 
   let listaAtual = [];
 
-  // Importar em lote para o Firebase
   document.getElementById("btnImportarBradesco").addEventListener("click", async () => {
     const status = document.getElementById("statusImport");
-    status.innerText = "Enviando para o Firebase...";
+    status.className = "status";
+    status.innerText = "Gravando no servidor do Firebase...";
     try {
       const batch = writeBatch(db);
       dadosIniciaisBradesco.forEach((item) => {
-        const docId = `Bradesco Saúde_${item.codigo}`;
+        const docId = `Bradesco_Saude_${item.codigo}`;
         const ref = doc(db, "procedimentos", docId);
         batch.set(ref, {
           plano: "Bradesco Saúde",
@@ -165,15 +169,15 @@
         });
       });
       await batch.commit();
-      status.innerText = "21 procedimentos cadastrados com sucesso no Bradesco Saúde!";
-      carregarProcedimentos();
+      status.innerText = "Sucesso! Os 21 procedimentos foram gravados no Firebase.";
+      await carregarProcedimentos();
     } catch (e) {
-      status.style.color = "#ef4444";
-      status.innerText = "Erro ao enviar: " + e.message;
+      console.error(e);
+      status.className = "status erro";
+      status.innerText = "Erro ao gravar no Firebase: " + e.message;
     }
   });
 
-  // Salvar novo ou atualizar procedimento
   document.getElementById("btnSalvar").addEventListener("click", async () => {
     const plano = document.getElementById("planoSelect").value;
     const codigo = document.getElementById("codInput").value.trim();
@@ -188,7 +192,8 @@
     }
 
     try {
-      const docId = `${plano}_${codigo}`;
+      const planoSlug = plano.replace(/\s+/g, "_");
+      const docId = `${planoSlug}_${codigo}`;
       await setDoc(doc(db, "procedimentos", docId), {
         plano, codigo, nome, qtd_us, quant_aux
       });
@@ -196,32 +201,37 @@
       document.getElementById("nomeInput").value = "";
       document.getElementById("usInput").value = "";
       document.getElementById("auxInput").value = "0";
+      status.className = "status";
       status.innerText = "Procedimento salvo com sucesso!";
       setTimeout(() => status.innerText = "", 3000);
-      carregarProcedimentos();
+      await carregarProcedimentos();
     } catch (e) {
-      alert("Erro ao salvar: " + e.message);
+      console.error(e);
+      status.className = "status erro";
+      status.innerText = "Erro ao salvar: " + e.message;
     }
   });
 
-  // Carregar lista do Firebase filtrada pelo plano selecionado
   async function carregarProcedimentos() {
     const planoSelecionado = document.getElementById("planoSelect").value;
     document.getElementById("tituloLista").innerText = `Procedimentos - ${planoSelecionado}`;
     const tbody = document.getElementById("tabelaCorpo");
-    tbody.innerHTML = `<tr><td colspan="5">Carregando...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5">Carregando dados do servidor...</td></tr>`;
 
-    const snap = await getDocs(collection(db, "procedimentos"));
-    listaAtual = [];
-    snap.forEach((docSnap) => {
-      const data = docSnap.data();
-      if (data.plano === planoSelecionado) {
-        listaAtual.push({ id: docSnap.id, ...data });
-      }
-    });
+    try {
+      const q = query(collection(db, "procedimentos"), where("plano", "==", planoSelecionado));
+      const snap = await getDocs(q);
+      listaAtual = [];
+      snap.forEach((docSnap) => {
+        listaAtual.push({ id: docSnap.id, ...docSnap.data() });
+      });
 
-    listaAtual.sort((a, b) => a.nome.localeCompare(b.nome));
-    renderizarTabela();
+      listaAtual.sort((a, b) => a.nome.localeCompare(b.nome));
+      renderizarTabela();
+    } catch (e) {
+      console.error(e);
+      tbody.innerHTML = `<tr><td colspan="5" class="erro">Erro ao carregar do Firebase: ${e.message}</td></tr>`;
+    }
   }
 
   function renderizarTabela() {
@@ -249,14 +259,17 @@
 
   window.excluirProc = async (id) => {
     if (!confirm("Remover este procedimento?")) return;
-    await deleteDoc(doc(db, "procedimentos", id));
-    carregarProcedimentos();
+    try {
+      await deleteDoc(doc(db, "procedimentos", id));
+      await carregarProcedimentos();
+    } catch (e) {
+      alert("Erro ao excluir: " + e.message);
+    }
   };
 
   document.getElementById("planoSelect").addEventListener("change", carregarProcedimentos);
   document.getElementById("buscaInput").addEventListener("input", renderizarTabela);
 
-  // Inicializa
   carregarProcedimentos();
 </script>
 </body>

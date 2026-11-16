@@ -7,7 +7,7 @@
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: #f4f6f8; color: #1e293b; margin: 0; padding: 24px 16px; }
-    .container { max-width: 1180px; margin: 0 auto; }
+    .container { max-width: 1220px; margin: 0 auto; }
     .card { background: #fff; border-radius: 10px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
     h1 { font-size: 1.45rem; margin: 0 0 20px 0; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; }
     h2 { font-size: 1.08rem; margin: 0 0 14px 0; color: #0f172a; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
@@ -74,7 +74,7 @@
     th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; text-transform: uppercase; }
     .num { text-align: right; white-space: nowrap; }
     .center { text-align: center; }
-    .input-vezes, .input-pct {
+    .input-vezes, .input-pct, .select-aux {
       width: 68px;
       padding: 5px 6px;
       text-align: center;
@@ -86,6 +86,10 @@
       width: 64px;
       background: #fffbeb;
       border-color: #f59e0b;
+    }
+    .select-aux {
+      width: 62px;
+      padding: 4px;
     }
     .btn-rem {
       background: #ef4444;
@@ -205,7 +209,7 @@
     <div class="proc-list" id="listaDisponiveis"></div>
   </div>
 
-  <!-- Procedimentos Adicionados (Controle de Vezes e Seleção do Principal) -->
+  <!-- Procedimentos Adicionados (Controle de Vezes, Auxiliares e Principal) -->
   <div class="card hidden" id="cardSelecionados">
     <h2>
       <span>Procedimentos Adicionados <span class="badge" id="badgeSelecionados">0</span></span>
@@ -220,7 +224,7 @@
             <th>Procedimento</th>
             <th class="center" style="width: 90px;">Vezes</th>
             <th class="num" style="width: 130px;">QTD US/URS/CRS</th>
-            <th class="center" style="width: 95px;">Auxiliares</th>
+            <th class="center" style="width: 105px;">Auxiliares</th>
             <th class="center" style="width: 85px;">Ação</th>
           </tr>
         </thead>
@@ -269,7 +273,7 @@
           <tr>
             <th>Código</th>
             <th>Descrição</th>
-            <th class="num">Valor c/ %</th>
+            <th class="num">Valor Base (QTD×US×Val×Mult)</th>
             <th class="num">Cirurgião</th>
             <th class="num">Auxiliar 1 (30%)</th>
             <th class="num">Auxiliar 2 (20%)</th>
@@ -305,16 +309,15 @@
   let procedimentosDoPlano = [];
   let procedimentosSelecionados = [];
   let uidPrincipalManual = null;
-  let percentuaisCustomizados = {}; // chave: `${uid}_${linhaIndex}` -> valor decimal (ex: 0.7)
+  let percentuaisCustomizados = {};
 
   function lerDecimal(str) {
-    if (!str) return 0;
+    if (str === null || str === undefined || str === "") return 0;
     const limpo = String(str).trim().replace(/\s+/g, "").replace(",", ".");
     const num = parseFloat(limpo);
     return isNaN(num) ? 0 : num;
   }
 
-  // Arredonda exatamente em 2 casas decimais como no extrato da operadora
   function arredondar2(valor) {
     return Math.round((valor + Number.EPSILON) * 100) / 100;
   }
@@ -343,7 +346,13 @@
         const dados = docSnap.data();
         if (dados.plano) {
           planosUnicos.add(dados.plano);
-          todosProcedimentos.push({ id: docSnap.id, ...dados });
+          const auxNormalizado = Math.min(2, Math.max(0, parseInt(dados.quant_aux, 10) || 0));
+          todosProcedimentos.push({
+            id: docSnap.id,
+            ...dados,
+            qtd_us: lerDecimal(dados.qtd_us),
+            quant_aux: auxNormalizado
+          });
         }
       });
 
@@ -429,7 +438,12 @@
     if (existente) {
       existente.vezes += 1;
     } else {
-      procedimentosSelecionados.push({ ...item, vezes: 1, uid: Date.now() + Math.random() });
+      procedimentosSelecionados.push({
+        ...item,
+        vezes: 1,
+        quant_aux: Number(item.quant_aux) || 0,
+        uid: Date.now() + Math.random()
+      });
     }
     atualizarTudo();
   };
@@ -439,6 +453,14 @@
     if (!item) return;
     const num = parseInt(valor, 10);
     item.vezes = num >= 1 ? num : 1;
+    atualizarTudo();
+  };
+
+  window.atualizarAuxiliares = (uid, valor) => {
+    const item = procedimentosSelecionados.find(p => p.uid === uid);
+    if (!item) return;
+    const num = parseInt(valor, 10);
+    item.quant_aux = [0, 1, 2].includes(num) ? num : 0;
     atualizarTudo();
   };
 
@@ -475,13 +497,21 @@
     atualizarTudo();
   });
 
-  // Calcula os valores de uma linha arredondando cada parcela em 2 casas decimais
+  // Valor Base = QTD COD * QTD US/URS/CRS * VALOR US/URS/CRS * MÚLTIPLO DE REEMBOLSO
+  // Cirurgião = Valor Base * Percentual
+  // Auxiliar 1 (30%) = Cirurgião * 0.30 (se quant_aux >= 1)
+  // Auxiliar 2 (20%) = Cirurgião * 0.20 (se quant_aux >= 2)
+  // Instrumentador (10%) = Cirurgião * 0.10
   function calcularLinha(proc, qtdCod, percentual, valorUs, multiplo, chaveLinha = "") {
-    const qtdUs = Number(proc.qtd_us);
-    const base = qtdCod * qtdUs * valorUs * multiplo;
-    const cirurgiao = arredondar2(base * percentual);
-    const aux1 = proc.quant_aux >= 1 ? arredondar2(cirurgiao * 0.30) : 0;
-    const aux2 = proc.quant_aux >= 2 ? arredondar2(cirurgiao * 0.20) : 0;
+    const qtdUs = Number(proc.qtd_us) || 0;
+    const qtdAux = Number(proc.quant_aux) || 0;
+
+    const valorBaseBruto = qtdCod * qtdUs * valorUs * multiplo;
+    const valorBase = arredondar2(valorBaseBruto);
+
+    const cirurgiao = arredondar2(valorBaseBruto * percentual);
+    const aux1 = qtdAux >= 1 ? arredondar2(cirurgiao * 0.30) : 0;
+    const aux2 = qtdAux >= 2 ? arredondar2(cirurgiao * 0.20) : 0;
     const instrumentador = arredondar2(cirurgiao * 0.10);
     const totalLinha = arredondar2(cirurgiao + aux1 + aux2 + instrumentador);
 
@@ -490,12 +520,12 @@
       codigo: proc.codigo,
       nome: proc.nome,
       qtd_cod: qtdCod,
-      quant_aux: proc.quant_aux,
+      quant_aux: qtdAux,
       qtd_us: qtdUs,
       valor_us: valorUs,
       multiplo: multiplo,
       percentual: percentual,
-      valor_aplicado: cirurgiao,
+      valor_base: valorBase,
       cirurgiao,
       aux1,
       aux2,
@@ -595,7 +625,13 @@
             >
           </td>
           <td class="num">${formatarNumero(p.qtd_us, 2, 2)}</td>
-          <td class="center">${p.quant_aux}</td>
+          <td class="center">
+            <select class="select-aux" onchange="atualizarAuxiliares(${p.uid}, this.value)">
+              <option value="0" ${p.quant_aux === 0 ? 'selected' : ''}>0</option>
+              <option value="1" ${p.quant_aux === 1 ? 'selected' : ''}>1</option>
+              <option value="2" ${p.quant_aux === 2 ? 'selected' : ''}>2</option>
+            </select>
+          </td>
           <td class="center"><button type="button" class="btn-rem" onclick="removerDoReembolso(${p.uid})">Remover</button></td>
         </tr>
       `;
@@ -635,16 +671,7 @@
     const linhasCalculadas = [];
 
     for (let i = 0; i < principal.vezes; i++) {
-      const chave = `${principal.uid}_${i}`;
-      const pctPadrao = i === 0 ? 1.0 : 0.5;
-      const pct = percentuaisCustomizados[chave] !== undefined ? percentuaisCustomizados[chave] : pctPadrao;
-      const linha = calcularLinha(principal, 1, pct, valorUsReal, multiploReal, chave);
-      linha.isPrincipal = true;
-      linhasCalculadas.push(linha);
-    }
-
-    secundarios.forEach((proc) => {
-      const chave = `${proc.uid}_0`;
+      const chave = `${principal.uid}_${i}`; const pctPadrao = i === 0 ? 1.0 : 0.5; const pct = percentuaisCustomizados[chave] !== undefined ? percentuaisCustomizados[chave] : pctPadrao; const linha = calcularLinha(principal, 1, pct, valorUsReal, multiploReal, chave); linha.isPrincipal = true; linhasCalculadas.push(linha); }  secundarios.forEach((proc) => { const chave = `${proc.uid}_0`;
       const pct = percentuaisCustomizados[chave] !== undefined ? percentuaisCustomizados[chave] : 0.5;
       const linha = calcularLinha(proc, proc.vezes, pct, valorUsReal, multiploReal, chave);
       linha.isPrincipal = false;
@@ -656,8 +683,7 @@
       <tr>
         <td><strong>${l.codigo}</strong></td>
         <td>
-          ${l.nome}
-          ${l.isPrincipal ? '<span class="tag-principal">PRINCIPAL</span>' : ''}
+          ${l.nome}${l.isPrincipal ? '<span class="tag-principal">PRINCIPAL</span>' : ''}
         </td>
         <td class="center"><strong>${l.qtd_cod}</strong></td>
         <td class="center">${l.quant_aux}</td>
@@ -693,7 +719,7 @@
         <tr>
           <td><strong>${l.codigo}</strong></td>
           <td>${l.nome}</td>
-          <td class="num">${formatarMoeda(l.valor_aplicado)}</td>
+          <td class="num">${formatarMoeda(l.valor_base)}</td>
           <td class="num">${formatarMoeda(l.cirurgiao)}</td>
           <td class="num ${l.aux1 === 0 ? 'sub-zero' : ''}">${formatarMoeda(l.aux1)}</td>
           <td class="num ${l.aux2 === 0 ? 'sub-zero' : ''}">${formatarMoeda(l.aux2)}</td>
@@ -708,23 +734,4 @@
       <tr class="row-total">
         <td colspan="3" class="num">TOTAL POR EQUIPE</td>
         <td class="num">${formatarMoeda(totCirurgiao)}</td>
-        <td class="num">${formatarMoeda(totAux1)}</td>
-        <td class="num">${formatarMoeda(totAux2)}</td>
-        <td class="num">${formatarMoeda(totInst)}</td>
-      </tr>
-      <tr class="row-total-geral">
-        <td colspan="6" class="num">TOTAL GERAL DO REEMBOLSO</td>
-        <td class="num">${formatarMoeda(totalGeral)}</td>
-      </tr>
-    `;
-  }
-
-  document.getElementById("planoSelect").addEventListener("change", aoMudarPlano);
-  document.getElementById("buscaProcInput").addEventListener("input", renderizarDisponiveis);
-  document.getElementById("valorUsInput").addEventListener("input", atualizarTudo);
-  document.getElementById("multiploInput").addEventListener("input", atualizarTudo);
-
-  inicializarDados();
-</script>
-</body>
-</html>
+        <td class="num">${formatarMoeda(totAux

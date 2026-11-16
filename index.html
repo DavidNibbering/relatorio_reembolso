@@ -10,7 +10,7 @@
     .container { max-width: 1180px; margin: 0 auto; }
     .card { background: #fff; border-radius: 10px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
     h1 { font-size: 1.45rem; margin: 0 0 20px 0; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; }
-    h2 { font-size: 1.08rem; margin: 0 0 14px 0; color: #0f172a; display: flex; align-items: center; justify-content: space-between; }
+    h2 { font-size: 1.08rem; margin: 0 0 14px 0; color: #0f172a; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
     .form-group { display: flex; flex-direction: column; margin-bottom: 14px; }
     .row { display: flex; gap: 16px; flex-wrap: wrap; }
     .row .form-group { flex: 1; min-width: 200px; }
@@ -199,7 +199,7 @@
   <div class="card hidden" id="cardCalculo">
     <h2>
       <span>Prévia do Cálculo de Reembolso</span>
-      <span class="badge" id="badgePrincipalInfo">Ordenado pelo maior retorno</span>
+      <span class="badge" id="badgePrincipalInfo">1º procedimento definido pelo maior lucro total</span>
     </h2>
 
     <div class="table-wrap">
@@ -421,14 +421,24 @@
     };
   }
 
-  // Descobre qual procedimento gera o maior retorno total ao assumir o topo (1ª linha 100%, demais 50%)
-  function calcularRetornoComoPrincipal(proc, valorUs, multiplo) {
-    let soma = 0;
-    for (let i = 0; i < proc.vezes; i++) {
-      const pct = i === 0 ? 1.0 : 0.5;
-      soma += calcularLinha(proc, 1, pct, valorUs, multiplo).totalLinha;
-    }
-    return soma;
+  // Simula o Total Geral do relatório inteiro caso o candidato na posição `idxCandidato` seja o 1º (Principal)
+  function simularTotalGeralComPrincipal(idxCandidato, valorUs, multiplo) {
+    let totalGeral = 0;
+
+    procedimentosSelecionados.forEach((proc, idx) => {
+      if (idx === idxCandidato) {
+        // Como principal: repete 'vezes' linhas de QTD 1 (1ª = 100%, demais = 50%)
+        for (let i = 0; i < proc.vezes; i++) {
+          const pct = i === 0 ? 1.0 : 0.5;
+          totalGeral += calcularLinha(proc, 1, pct, valorUs, multiplo).totalLinha;
+        }
+      } else {
+        // Como secundário: 1 linha única com QTD = vezes e percentual = 50%
+        totalGeral += calcularLinha(proc, proc.vezes, 0.5, valorUs, multiplo).totalLinha;
+      }
+    });
+
+    return totalGeral;
   }
 
   function atualizarTudo() {
@@ -483,17 +493,21 @@
 
     cardCalc.classList.remove("hidden");
 
-    const valorUs = parseFloat(document.getElementById("valorUsInput").value) || 0;
-    const multiplo = parseFloat(document.getElementById("multiploInput").value) || 0;
+    const valorUsReal = parseFloat(document.getElementById("valorUsInput").value) || 0;
+    const multiploReal = parseFloat(document.getElementById("multiploInput").value) || 0;
 
-    // 1. Identifica qual procedimento gera o maior retorno total como principal
+    // Usa 1 como base provisória apenas para ranking caso o usuário ainda não tenha digitado Valor US
+    const valorUsRanking = valorUsReal > 0 ? valorUsReal : 1;
+    const multiploRanking = multiploReal > 0 ? multiploReal : 1;
+
+    // 1. Escolhe o procedimento que maximiza o Total Geral do Reembolso (maior lucro)
     let indicePrincipal = 0;
-    let maiorRetorno = -1;
+    let maiorTotalGeral = -1;
 
-    procedimentosSelecionados.forEach((proc, idx) => {
-      const retorno = calcularRetornoComoPrincipal(proc, valorUs, multiplo);
-      if (retorno > maiorRetorno) {
-        maiorRetorno = retorno;
+    procedimentosSelecionados.forEach((_, idx) => {
+      const totalCenario = simularTotalGeralComPrincipal(idx, valorUsRanking, multiploRanking);
+      if (totalCenario > maiorTotalGeral) {
+        maiorTotalGeral = totalCenario;
         indicePrincipal = idx;
       }
     });
@@ -502,25 +516,23 @@
     const secundarios = procedimentosSelecionados
       .filter((_, idx) => idx !== indicePrincipal)
       .sort((a, b) => {
-        const retA = calcularLinha(a, a.vezes, 0.5, valorUs, multiplo).totalLinha;
-        const retB = calcularLinha(b, b.vezes, 0.5, valorUs, multiplo).totalLinha;
+        const retA = calcularLinha(a, a.vezes, 0.5, valorUsRanking, multiploRanking).totalLinha;
+        const retB = calcularLinha(b, b.vezes, 0.5, valorUsRanking, multiploRanking).totalLinha;
         return retB - retA;
       });
 
-    // 2. Monta as linhas finais:
-    // - Principal: repete 'vezes' linhas com QTD COD = 1 (1ª = 100%, restantes = 50%)
-    // - Secundários: 1 linha cada com QTD COD = vezes e percentual = 50%
+    // 2. Monta as linhas finais com os valores reais digitados
     const linhasCalculadas = [];
 
     for (let i = 0; i < principal.vezes; i++) {
       const pct = i === 0 ? 1.0 : 0.5;
-      const linha = calcularLinha(principal, 1, pct, valorUs, multiplo);
+      const linha = calcularLinha(principal, 1, pct, valorUsReal, multiploReal);
       linha.isPrincipal = true;
       linhasCalculadas.push(linha);
     }
 
     secundarios.forEach((proc) => {
-      const linha = calcularLinha(proc, proc.vezes, 0.5, valorUs, multiplo);
+      const linha = calcularLinha(proc, proc.vezes, 0.5, valorUsReal, multiploReal);
       linha.isPrincipal = false;
       linhasCalculadas.push(linha);
     });

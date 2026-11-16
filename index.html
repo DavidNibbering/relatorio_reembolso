@@ -74,13 +74,18 @@
     th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; text-transform: uppercase; }
     .num { text-align: right; white-space: nowrap; }
     .center { text-align: center; }
-    .input-vezes {
+    .input-vezes, .input-pct {
       width: 68px;
       padding: 5px 6px;
       text-align: center;
       font-weight: 600;
       border: 1px solid #cbd5e1;
       border-radius: 5px;
+    }
+    .input-pct {
+      width: 64px;
+      background: #fffbeb;
+      border-color: #f59e0b;
     }
     .btn-rem {
       background: #ef4444;
@@ -228,7 +233,10 @@
   <div class="card hidden" id="cardCalculo">
     <h2>
       <span>Prévia do Cálculo de Reembolso</span>
-      <span class="badge" id="badgePrincipalInfo">Modo: Automático (Maior Lucro)</span>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button type="button" class="btn-auto" id="btnResetPct" style="background: #64748b;" title="Restaurar percentuais padrão (100% / 50%)">Resetar %</button>
+        <span class="badge" id="badgePrincipalInfo">Modo: Automático (Maior Lucro)</span>
+      </div>
     </h2>
 
     <div class="table-wrap">
@@ -245,7 +253,7 @@
             <th class="num">QTD US/URS/CRS</th>
             <th class="num">VALOR US</th>
             <th class="center">MÚLTIPLO</th>
-            <th class="center">(%)</th>
+            <th class="center">(%) Editável</th>
           </tr>
         </thead>
         <tbody id="tabelaSolicitados"></tbody>
@@ -296,14 +304,19 @@
   let todosProcedimentos = [];
   let procedimentosDoPlano = [];
   let procedimentosSelecionados = [];
-  let uidPrincipalManual = null; // null = automático pelo maior lucro
+  let uidPrincipalManual = null;
+  let percentuaisCustomizados = {}; // chave: `${uid}_${linhaIndex}` -> valor decimal (ex: 0.7)
 
-  // Converte texto com vírgula ou ponto (ex: "2,02755" ou "2.02755") mantendo todas as casas decimais
   function lerDecimal(str) {
     if (!str) return 0;
     const limpo = String(str).trim().replace(/\s+/g, "").replace(",", ".");
     const num = parseFloat(limpo);
     return isNaN(num) ? 0 : num;
+  }
+
+  // Arredonda exatamente em 2 casas decimais como no extrato da operadora
+  function arredondar2(valor) {
+    return Math.round((valor + Number.EPSILON) * 100) / 100;
   }
 
   function formatarMoeda(valor) {
@@ -358,6 +371,7 @@
 
     procedimentosSelecionados = [];
     uidPrincipalManual = null;
+    percentuaisCustomizados = {};
     document.getElementById("buscaProcInput").value = "";
 
     if (!plano) {
@@ -430,7 +444,16 @@
 
   window.definirPrincipalManual = (uid) => {
     uidPrincipalManual = uid;
+    percentuaisCustomizados = {};
     atualizarTudo();
+  };
+
+  window.atualizarPercentualLinha = (chaveLinha, valorStr) => {
+    const pctNum = lerDecimal(valorStr);
+    if (pctNum >= 0) {
+      percentuaisCustomizados[chaveLinha] = pctNum / 100;
+      renderizarTabelasCalculo(obterIndicePrincipal());
+    }
   };
 
   window.removerDoReembolso = (uid) => {
@@ -443,20 +466,27 @@
 
   document.getElementById("btnAutoPrincipal").addEventListener("click", () => {
     uidPrincipalManual = null;
+    percentuaisCustomizados = {};
     atualizarTudo();
   });
 
-  // Calcula os valores de uma linha mantendo precisão total das casas decimais
-  function calcularLinha(proc, qtdCod, percentual, valorUs, multiplo) {
+  document.getElementById("btnResetPct").addEventListener("click", () => {
+    percentuaisCustomizados = {};
+    atualizarTudo();
+  });
+
+  // Calcula os valores de uma linha arredondando cada parcela em 2 casas decimais
+  function calcularLinha(proc, qtdCod, percentual, valorUs, multiplo, chaveLinha = "") {
     const qtdUs = Number(proc.qtd_us);
     const base = qtdCod * qtdUs * valorUs * multiplo;
-    const cirurgiao = base * percentual;
-    const aux1 = proc.quant_aux >= 1 ? cirurgiao * 0.30 : 0;
-    const aux2 = proc.quant_aux >= 2 ? cirurgiao * 0.20 : 0;
-    const instrumentador = cirurgiao * 0.10;
-    const totalLinha = cirurgiao + aux1 + aux2 + instrumentador;
+    const cirurgiao = arredondar2(base * percentual);
+    const aux1 = proc.quant_aux >= 1 ? arredondar2(cirurgiao * 0.30) : 0;
+    const aux2 = proc.quant_aux >= 2 ? arredondar2(cirurgiao * 0.20) : 0;
+    const instrumentador = arredondar2(cirurgiao * 0.10);
+    const totalLinha = arredondar2(cirurgiao + aux1 + aux2 + instrumentador);
 
     return {
+      chaveLinha,
       codigo: proc.codigo,
       nome: proc.nome,
       qtd_cod: qtdCod,
@@ -474,7 +504,6 @@
     };
   }
 
-  // Simula o Total Geral do relatório inteiro caso o candidato `idxCandidato` seja o 1º (Principal)
   function simularTotalGeralComPrincipal(idxCandidato, valorUs, multiplo) {
     let totalGeral = 0;
 
@@ -492,7 +521,6 @@
     return totalGeral;
   }
 
-  // Define qual índice é o principal (manual ou automático)
   function obterIndicePrincipal() {
     if (procedimentosSelecionados.length === 0) return -1;
 
@@ -604,23 +632,26 @@
         return retB - retA;
       });
 
-    // Monta as linhas finais
     const linhasCalculadas = [];
 
     for (let i = 0; i < principal.vezes; i++) {
-      const pct = i === 0 ? 1.0 : 0.5;
-      const linha = calcularLinha(principal, 1, pct, valorUsReal, multiploReal);
+      const chave = `${principal.uid}_${i}`;
+      const pctPadrao = i === 0 ? 1.0 : 0.5;
+      const pct = percentuaisCustomizados[chave] !== undefined ? percentuaisCustomizados[chave] : pctPadrao;
+      const linha = calcularLinha(principal, 1, pct, valorUsReal, multiploReal, chave);
       linha.isPrincipal = true;
       linhasCalculadas.push(linha);
     }
 
     secundarios.forEach((proc) => {
-      const linha = calcularLinha(proc, proc.vezes, 0.5, valorUsReal, multiploReal);
+      const chave = `${proc.uid}_0`;
+      const pct = percentuaisCustomizados[chave] !== undefined ? percentuaisCustomizados[chave] : 0.5;
+      const linha = calcularLinha(proc, proc.vezes, pct, valorUsReal, multiploReal, chave);
       linha.isPrincipal = false;
       linhasCalculadas.push(linha);
     });
 
-    // Renderiza Tabela 1: Procedimentos Solicitados
+    // Tabela 1: Procedimentos Solicitados
     tbodySol.innerHTML = linhasCalculadas.map(l => `
       <tr>
         <td><strong>${l.codigo}</strong></td>
@@ -633,21 +664,30 @@
         <td class="num">${formatarNumero(l.qtd_us, 2, 2)}</td>
         <td class="num">${formatarNumero(l.valor_us, 2, 6)}</td>
         <td class="center">${formatarNumero(l.multiplo, 2, 4)}</td>
-        <td class="center"><strong>${(l.percentual * 100).toFixed(0)}%</strong></td>
+        <td class="center">
+          <input
+            type="text"
+            inputmode="decimal"
+            class="input-pct"
+            value="${formatarNumero(l.percentual * 100, 0, 2)}"
+            onchange="atualizarPercentualLinha('${l.chaveLinha}', this.value)"
+            title="Edite o percentual desta linha (ex: 100, 70, 50)"
+          >%
+        </td>
       </tr>
     `).join("");
 
-    // Soma os totais e renderiza Tabela 2: Cálculo Exato
+    // Tabela 2: Cálculo Exato
     let totCirurgiao = 0;
     let totAux1 = 0;
     let totAux2 = 0;
     let totInst = 0;
 
     const htmlLinhasRes = linhasCalculadas.map(l => {
-      totCirurgiao += l.cirurgiao;
-      totAux1 += l.aux1;
-      totAux2 += l.aux2;
-      totInst += l.instrumentador;
+      totCirurgiao = arredondar2(totCirurgiao + l.cirurgiao);
+      totAux1 = arredondar2(totAux1 + l.aux1);
+      totAux2 = arredondar2(totAux2 + l.aux2);
+      totInst = arredondar2(totInst + l.instrumentador);
 
       return `
         <tr>
@@ -662,7 +702,7 @@
       `;
     }).join("");
 
-    const totalGeral = totCirurgiao + totAux1 + totAux2 + totInst;
+    const totalGeral = arredondar2(totCirurgiao + totAux1 + totAux2 + totInst);
 
     tbodyRes.innerHTML = htmlLinhasRes + `
       <tr class="row-total">

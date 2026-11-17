@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gerar PDF de Reembolso</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: #f4f6f8; color: #1e293b; margin: 0; padding: 24px 16px; }
@@ -378,6 +379,40 @@
     }
     .btn-whatsapp:hover { background: #1ebe5d; }
     .btn-whatsapp:disabled { background: #94a3b8; cursor: wait; }
+
+    .btn-whatsapp-pdf {
+      background: #128C7E;
+      color: #fff;
+      border: none;
+      padding: 12px 22px;
+      border-radius: 8px;
+      font-size: 0.96rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      box-shadow: 0 3px 8px rgba(18, 140, 126, 0.25);
+    }
+    .btn-whatsapp-pdf:hover { background: #0e7266; }
+    .btn-whatsapp-pdf:disabled { background: #94a3b8; cursor: wait; }
+
+    .btn-pdf-export {
+      background: #1e3a8a;
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 0.96rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      box-shadow: 0 3px 8px rgba(30, 58, 138, 0.25);
+    }
+    .btn-pdf-export:hover { background: #172554; }
+
     .badge {
       background: #e0f2fe;
       color: #0369a1;
@@ -431,11 +466,290 @@
       color: #0f172a;
       line-height: 1.45;
     }
+
+    /* ================= ESTILOS DO DOCUMENTO PDF (IMPRESSÃO E HTML2PDF) ================= */
+    #printDocument {
+      display: none;
+    }
+
+    .pdf-render-scope {
+      font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+      font-size: 9pt;
+      line-height: 1.38;
+      color: #1a202c;
+      background: #ffffff;
+    }
+    .pdf-render-scope .pdf-doc-header {
+      background-color: #1b365d !important;
+      color: #ffffff !important;
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .pdf-render-scope .pdf-doc-header h1 {
+      font-size: 13pt;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      margin: 0;
+      border: none;
+      padding: 0;
+      color: #ffffff !important;
+    }
+    .pdf-render-scope .pdf-patient-grid {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+      background-color: #f8fafc !important;
+      border: 1px solid #cbd5e1;
+      margin-top: 0;
+    }
+    .pdf-render-scope .pdf-patient-grid td {
+      padding: 6px 10px;
+      border: 1px solid #cbd5e1;
+      font-size: 8.8pt;
+      vertical-align: middle;
+    }
+    .pdf-render-scope .pdf-field-label {
+      font-weight: 700;
+      color: #1b365d;
+      text-transform: uppercase;
+      font-size: 7.4pt;
+      display: block;
+      margin-bottom: 1px;
+    }
+    .pdf-render-scope .pdf-field-value {
+      font-weight: 600;
+      color: #0f172a;
+      font-size: 9.2pt;
+    }
+    .pdf-render-scope .pdf-intro-box {
+      background-color: #f1f5f9 !important;
+      border-left: 3.5px solid #1b365d;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      font-size: 8.4pt;
+      color: #334155;
+      text-align: justify;
+    }
+    .pdf-render-scope .pdf-intro-box p {
+      margin: 0 0 5px 0;
+      orphans: 3;
+      widows: 3;
+    }
+    .pdf-render-scope .pdf-intro-box p:last-child {
+      margin-bottom: 0;
+    }
+    .pdf-render-scope .pdf-section-title {
+      background-color: #e2e8f0 !important;
+      color: #1b365d !important;
+      font-weight: 700;
+      font-size: 9pt;
+      padding: 6px 10px;
+      border: 1px solid #cbd5e1;
+      border-bottom: none;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    .pdf-render-scope table.pdf-data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 8.2pt;
+      table-layout: fixed;
+    }
+    .pdf-render-scope table.pdf-data-table th {
+      background-color: #1b365d !important;
+      color: #ffffff !important;
+      font-weight: 700;
+      padding: 6px 4px;
+      border: 1px solid #1b365d;
+      text-align: center;
+      font-size: 7.3pt;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+    .pdf-render-scope table.pdf-data-table th.col-desc-header {
+      text-align: left;
+      padding-left: 7px;
+    }
+    .pdf-render-scope table.pdf-data-table td {
+      padding: 5px 5px;
+      border: 1px solid #cbd5e1;
+      vertical-align: middle;
+      word-wrap: break-word;
+    }
+    .pdf-render-scope table.pdf-data-table tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .pdf-render-scope table.pdf-data-table tr:nth-child(even) td {
+      background-color: #f8fafc !important;
+    }
+    .pdf-render-scope .pdf-col-code { text-align: center; font-weight: 600; }
+    .pdf-render-scope .pdf-col-desc { text-align: left; font-weight: 500; padding-left: 7px !important; line-height: 1.25; }
+    .pdf-render-scope .pdf-col-center { text-align: center; }
+    .pdf-render-scope .pdf-col-right { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    .pdf-render-scope tr.pdf-row-subtotal td {
+      background-color: #e2e8f0 !important;
+      font-weight: 700;
+      color: #0f172a;
+      border-top: 1.5px solid #94a3b8;
+    }
+    .pdf-render-scope tr.pdf-row-grandtotal td {
+      background-color: #1b365d !important;
+      color: #ffffff !important;
+      font-weight: 700;
+      font-size: 9pt;
+      border: 1px solid #1b365d;
+    }
+    .pdf-render-scope .pdf-glossary-box {
+      border: 1px solid #cbd5e1;
+      background-color: #ffffff !important;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      font-size: 8.1pt;
+      color: #334155;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .pdf-render-scope .pdf-glossary-header {
+      font-weight: 700;
+      color: #1b365d;
+      margin-bottom: 4px;
+      font-size: 8.3pt;
+    }
+    .pdf-render-scope .pdf-glossary-list {
+      margin: 0;
+      padding-left: 16px;
+    }
+    .pdf-render-scope .pdf-glossary-list li {
+      margin-bottom: 2px;
+      line-height: 1.3;
+    }
+    .pdf-render-scope .pdf-team-box {
+      border: 1px solid #cbd5e1;
+      background-color: #f8fafc !important;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .pdf-render-scope .pdf-team-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0;
+    }
+    .pdf-render-scope .pdf-team-table td {
+      padding: 3px 4px;
+      font-size: 8.4pt;
+      border: none;
+      border-bottom: 1px dashed #e2e8f0;
+      background: transparent !important;
+    }
+    .pdf-render-scope .pdf-team-table tr:last-child td {
+      border-bottom: none;
+    }
+    .pdf-render-scope .pdf-team-role { font-weight: 700; color: #1b365d; width: 19%; }
+    .pdf-render-scope .pdf-team-name { font-weight: 600; width: 34%; }
+    .pdf-render-scope .pdf-team-reg { color: #475569; width: 31%; }
+    .pdf-render-scope .pdf-team-val { text-align: right; font-weight: 700; color: #0f172a; width: 16%; white-space: nowrap; }
+
+    .pdf-render-scope .pdf-norms-banner {
+      background-color: #1b365d !important;
+      color: #ffffff !important;
+      padding: 7px 12px;
+      font-size: 8.1pt;
+      font-weight: 700;
+      margin-top: 10px;
+      margin-bottom: 8px;
+      border-radius: 3px;
+      line-height: 1.35;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    .pdf-render-scope .pdf-norms-banner a {
+      color: #ffffff !important;
+      text-decoration: underline;
+    }
+    .pdf-render-scope .pdf-norm-section-heading {
+      font-weight: 700;
+      color: #1b365d;
+      font-size: 8.7pt;
+      margin-top: 8px;
+      margin-bottom: 3px;
+      border-bottom: 1px solid #cbd5e1;
+      padding-bottom: 2px;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    .pdf-render-scope .pdf-norm-p {
+      margin: 0 0 4px 0;
+      font-size: 8.2pt;
+      color: #334155;
+      text-align: justify;
+      line-height: 1.36;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      orphans: 3;
+      widows: 3;
+    }
+    .pdf-render-scope .pdf-norm-sub {
+      margin: 0 0 4px 0;
+      padding-left: 14px;
+      font-size: 8.2pt;
+      color: #334155;
+      text-align: justify;
+      line-height: 1.36;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      orphans: 3;
+      widows: 3;
+    }
+    .pdf-render-scope .pdf-doc-footer {
+      margin-top: 16px;
+      padding-top: 8px;
+      border-top: 1px solid #cbd5e1;
+      text-align: right;
+      font-weight: 700;
+      font-size: 8.8pt;
+      color: #1b365d;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 15mm 14mm 16mm 14mm;
+      }
+
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        color: #1a202c !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      #printDocument {
+        display: block !important;
+      }
+    }
   </style>
 </head>
 <body>
 
-<div class="container">
+<div class="container no-print">
 
   <!-- Dados Principais do Reembolso -->
   <div class="card">
@@ -472,6 +786,11 @@
       <div class="form-group">
         <label for="valorUsInput">Valor US/URS/CRS (R$)</label>
         <input type="text" inputmode="decimal" id="valorUsInput" placeholder="Ex: 2,02755">
+      </div>
+
+      <div class="form-group">
+        <label for="cidadeInput">Cidade de Emissão (Rodapé PDF)</label>
+        <input type="text" id="cidadeInput" value="RECIFE" placeholder="Ex: RECIFE">
       </div>
     </div>
 
@@ -643,6 +962,28 @@
       </div>
     </div>
 
+    <!-- Botões de Exportação e Envio do PDF Oficial -->
+    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 22px; padding-top: 16px; border-top: 1px solid #e2e8f0; flex-wrap: wrap;">
+      <span id="statusPdfWhatsapp" style="font-size: 0.83rem; color: #166534; font-weight: 600;"></span>
+
+      <button type="button" class="btn-whatsapp-pdf" id="btnEnviarPdfWhatsapp">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824z"/>
+        </svg>
+        Enviar PDF por WhatsApp
+      </button>
+
+      <button type="button" class="btn-pdf-export" id="btnGerarPdf">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="12" y1="18" x2="12" y2="12"></line>
+          <polyline points="9 15 12 18 15 15"></polyline>
+        </svg>
+        Gerar PDF do Relatório
+      </button>
+    </div>
+
     <div class="checklist-box">
       <strong>Checklist Preventivo Bradesco Saúde (Antes de Protocolar):</strong>
       <ul class="alert-list" style="margin-top: 6px;">
@@ -655,8 +996,11 @@
 
 </div>
 
+<!-- DOCUMENTO OFICIAL PARA EXPORTAÇÃO EM PDF (EXATAMENTE CONFORME MODELO APROVADO) -->
+<div id="printDocument" class="pdf-render-scope"></div>
+
 <!-- Modal de Cadastro de Profissional (Doutor / Instrumentador) -->
-<div class="modal-overlay hidden" id="modalCadastro">
+<div class="modal-overlay hidden no-print" id="modalCadastro">
   <div class="modal-card">
     <h3>Cadastrar Profissional</h3>
 
@@ -722,7 +1066,6 @@
     "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"
   ];
 
-  // Popula select de UFs no modal (PE como padrão)
   document.getElementById("cadUf").innerHTML = UFS_BRASIL
     .map(uf => `<option value="${uf}" ${uf === "PE" ? "selected" : ""}>${uf}</option>`)
     .join("");
@@ -737,8 +1080,8 @@
   let procedimentosSelecionados = [];
   let uidPrincipalManual = null;
   let percentuaisCustomizados = {};
+  let ultimoCalculoCache = null;
 
-  // Estado da Equipe Cirúrgica
   let todosProfissionais = [];
   let equipeSelecionada = {
     cirurgiao: null,
@@ -748,6 +1091,14 @@
   };
   let tipoModalAtual = "doutor";
   let slotOrigemModal = "cirurgiao";
+
+  function escaparHtml(str) {
+    return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
 
   function lerDecimal(valor) {
     if (typeof valor === "number") return isNaN(valor) ? 0 : valor;
@@ -784,7 +1135,6 @@
     e.target.value = formatarCpf(e.target.value);
   });
 
-  // Leitura REST fallback para qualquer coleção
   async function buscarColecaoRest(nomeColecao) {
     const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${nomeColecao}?pageSize=500&key=${firebaseConfig.apiKey}`;
     const resp = await fetch(url);
@@ -926,8 +1276,8 @@
           : `COREN: ${p.registro || "Não inf."}`;
         return `
           <div class="dropdown-item" onmousedown="selecionarProfissionalSlot('${slot}', '${p.id}')">
-            <strong>${p.nome || "(Sem nome)"}</strong>
-            <span>${regTexto} &bull; CPF: ${p.cpf || "Não inf."}</span>
+            <strong>${escaparHtml(p.nome || "(Sem nome)")}</strong>
+            <span>${escaparHtml(regTexto)} &bull; CPF: ${escaparHtml(p.cpf || "Não inf.")}</span>
           </div>
         `;
       }).join("");
@@ -982,13 +1332,13 @@
       <div class="edit-person-box">
         <div>
           <span class="edit-mini-label">Nome Completo</span>
-          <input type="text" id="ed_nome_${slot}" value="${p.nome.replace(/"/g, "&quot;")}" oninput="sincronizarEdicaoLocal('${slot}')">
+          <input type="text" id="ed_nome_${slot}" value="${escaparHtml(p.nome)}" oninput="sincronizarEdicaoLocal('${slot}')">
         </div>
         ${ehDoutor ? `
           <div class="edit-row-2">
             <div style="flex: 2;">
               <span class="edit-mini-label">CRO</span>
-              <input type="text" id="ed_reg_${slot}" value="${p.registro.replace(/"/g, "&quot;")}" oninput="sincronizarEdicaoLocal('${slot}')">
+              <input type="text" id="ed_reg_${slot}" value="${escaparHtml(p.registro)}" oninput="sincronizarEdicaoLocal('${slot}')">
             </div>
             <div style="flex: 1;">
               <span class="edit-mini-label">UF</span>
@@ -998,12 +1348,12 @@
         ` : `
           <div>
             <span class="edit-mini-label">COREN</span>
-            <input type="text" id="ed_reg_${slot}" value="${p.registro.replace(/"/g, "&quot;")}" oninput="sincronizarEdicaoLocal('${slot}')">
+            <input type="text" id="ed_reg_${slot}" value="${escaparHtml(p.registro)}" oninput="sincronizarEdicaoLocal('${slot}')">
           </div>
         `}
         <div>
           <span class="edit-mini-label">CPF</span>
-          <input type="text" id="ed_cpf_${slot}" maxlength="14" value="${p.cpf.replace(/"/g, "&quot;")}" oninput="this.value = window.formatarCpfGlobal(this.value); sincronizarEdicaoLocal('${slot}')">
+          <input type="text" id="ed_cpf_${slot}" maxlength="14" value="${escaparHtml(p.cpf)}" oninput="this.value = window.formatarCpfGlobal(this.value); sincronizarEdicaoLocal('${slot}')">
         </div>
         <div class="edit-actions">
           <button type="button" class="btn-save-edit" id="btn_save_${slot}" onclick="salvarEdicaoProfissional('${slot}')">Salvar Alterações</button>
@@ -1067,7 +1417,6 @@
     }
   };
 
-  // Modal de Cadastro
   window.abrirModalCadastro = (tipoPadrao, slotOrigem) => {
     slotOrigemModal = slotOrigem;
     document.getElementById("cadNome").value = "";
@@ -1187,8 +1536,8 @@
       <div class="proc-item">
         <div class="proc-info">
           <div>
-            <span class="proc-code">${p.codigo}</span>
-            <span class="proc-name">${p.nome}</span>
+            <span class="proc-code">${escaparHtml(p.codigo)}</span>
+            <span class="proc-name">${escaparHtml(p.nome)}</span>
           </div>
           <div class="proc-meta">
             QTD US/URS/CRS: <strong>${formatarNumero(p.qtd_us, 2, 2)}</strong> &bull; Auxiliares: <strong>${p.quant_aux}</strong>
@@ -1432,8 +1781,8 @@
               ${ehPrincipal ? '★ Principal' : 'Definir 1º'}
             </button>
           </td>
-          <td><strong>${p.codigo}</strong></td>
-          <td>${p.nome}</td>
+          <td><strong>${escaparHtml(p.codigo)}</strong></td>
+          <td>${escaparHtml(p.nome)}</td>
           <td class="center">
             <input
               type="number"
@@ -1464,7 +1813,7 @@
     const reg = p.tipo === "doutor"
       ? (p.registro ? ` (CRO${p.uf ? "-" + p.uf : ""}: ${p.registro})` : "")
       : (p.registro ? ` (COREN: ${p.registro})` : "");
-    return `<div><strong>${rotulo}:</strong> ${p.nome}${reg}</div>`;
+    return `<div><strong>${rotulo}:</strong> ${escaparHtml(p.nome)}${escaparHtml(reg)}</div>`;
   }
 
   function renderizarTabelasCalculo(idxPrincipal) {
@@ -1476,6 +1825,7 @@
 
     if (procedimentosSelecionados.length === 0 || idxPrincipal === -1) {
       cardCalc.classList.add("hidden");
+      ultimoCalculoCache = null;
       return;
     }
 
@@ -1502,11 +1852,11 @@
 
     cabecalhoImg.innerHTML = `
       <div>
-        <div><strong>Paciente:</strong> ${paciente}${cartao ? ` &nbsp;|&nbsp; <strong>Cartão:</strong> ${cartao}` : ""}</div>
+        <div><strong>Paciente:</strong> ${escaparHtml(paciente)}${cartao ? ` &nbsp;|&nbsp; <strong>Cartão:</strong> ${escaparHtml(cartao)}` : ""}</div>
         ${htmlEquipe}
       </div>
       <div style="text-align: right;">
-        <div><strong>Plano:</strong> ${plano}</div>
+        <div><strong>Plano:</strong> ${escaparHtml(plano)}</div>
         <div><strong>Data:</strong> ${dataHoje}</div>
       </div>
     `;
@@ -1544,9 +1894,9 @@
     // Tabela 1: Procedimentos Solicitados
     tbodySol.innerHTML = linhasCalculadas.map(l => `
       <tr>
-        <td><strong>${l.codigo}</strong></td>
+        <td><strong>${escaparHtml(l.codigo)}</strong></td>
         <td>
-          ${l.nome}
+          ${escaparHtml(l.nome)}
           ${l.isPrincipal ? '<span class="tag-principal">PRINCIPAL</span>' : ''}
         </td>
         <td class="center"><strong>${l.qtd_cod}</strong></td>
@@ -1581,8 +1931,8 @@
 
       return `
         <tr>
-          <td><strong>${l.codigo}</strong></td>
-          <td>${l.nome}</td>
+          <td><strong>${escaparHtml(l.codigo)}</strong></td>
+          <td>${escaparHtml(l.nome)}</td>
           <td class="num">${formatarMoeda(l.valor_base)}</td>
           <td class="num">${formatarMoeda(l.cirurgiao)}</td>
           <td class="num ${l.aux1 === 0 ? 'sub-zero' : ''}">${formatarMoeda(l.aux1)}</td>
@@ -1593,6 +1943,20 @@
     }).join("");
 
     const totalGeral = arredondar2(totCirurgiao + totAux1 + totAux2 + totInst);
+
+    ultimoCalculoCache = {
+      plano,
+      paciente,
+      cartao,
+      valorUsReal,
+      multiploReal,
+      linhasCalculadas,
+      totCirurgiao,
+      totAux1,
+      totAux2,
+      totInst,
+      totalGeral
+    };
 
     tbodyRes.innerHTML = htmlLinhasRes + `
       <tr class="row-total">
@@ -1608,6 +1972,327 @@
       </tr>
     `;
   }
+
+  // ==================== MONTAGEM E EXPORTAÇÃO DO PDF OFICIAL ====================
+
+  function montarLinhasEquipePdf(calc) {
+    const linhas = [];
+
+    const adicionarMembro = (rotulo, pessoa, valor) => {
+      if (!pessoa && valor <= 0) return;
+      const nomeExibir = pessoa?.nome ? pessoa.nome.toUpperCase() : "NÃO INFORMADO";
+      let docExibir = "";
+      if (pessoa) {
+        if (pessoa.tipo === "doutor") {
+          const croPart = pessoa.registro ? `CRO${pessoa.uf ? "/" + pessoa.uf.toUpperCase() : ""}: ${pessoa.registro}` : "";
+          const cpfPart = pessoa.cpf ? `CPF: ${pessoa.cpf}` : "";
+          docExibir = [croPart, cpfPart].filter(Boolean).join(" &nbsp;|&nbsp; ");
+        } else {
+          const corenPart = pessoa.registro ? `COREN: ${pessoa.registro}` : "";
+          const cpfPart = pessoa.cpf ? `CPF: ${pessoa.cpf}` : "";
+          docExibir = [corenPart, cpfPart].filter(Boolean).join(" &nbsp;|&nbsp; ");
+        }
+      }
+      linhas.push(`
+        <tr>
+          <td class="pdf-team-role">${rotulo}:</td>
+          <td class="pdf-team-name">${escaparHtml(nomeExibir)}</td>
+          <td class="pdf-team-reg">${docExibir || "-"}</td>
+          <td class="pdf-team-val">VALOR: ${formatarMoeda(valor)}</td>
+        </tr>
+      `);
+    };
+
+    adicionarMembro("CIRURGIÃO", equipeSelecionada.cirurgiao, calc.totCirurgiao);
+    if (equipeSelecionada.aux1 || calc.totAux1 > 0) {
+      adicionarMembro("1º AUXILIAR", equipeSelecionada.aux1, calc.totAux1);
+    }
+    if (equipeSelecionada.aux2 || calc.totAux2 > 0) {
+      adicionarMembro("2º AUXILIAR", equipeSelecionada.aux2, calc.totAux2);
+    }
+    if (equipeSelecionada.instrumentador || calc.totInst > 0) {
+      adicionarMembro("INSTRUMENTADOR(A)", equipeSelecionada.instrumentador, calc.totInst);
+    }
+
+    return linhas.join("");
+  }
+
+  function construirHtmlDocumentoPdf(calc) {
+    const cidade = (document.getElementById("cidadeInput").value.trim() || "RECIFE").toUpperCase();
+    const dataHoje = new Date().toLocaleDateString("pt-BR");
+
+    const linhasTabela1Html = calc.linhasCalculadas.map(l => `
+      <tr>
+        <td class="pdf-col-code">${escaparHtml(l.codigo)}</td>
+        <td class="pdf-col-desc">${escaparHtml(l.nome.toUpperCase())}</td>
+        <td class="pdf-col-center">${l.qtd_cod}</td>
+        <td class="pdf-col-center">${l.quant_aux}</td>
+        <td class="pdf-col-right">${formatarNumero(l.qtd_us, 2, 2)}</td>
+        <td class="pdf-col-right">${formatarNumero(l.valor_us, 2, 6)}</td>
+        <td class="pdf-col-center">${formatarNumero(l.multiplo, 0, 4)}</td>
+        <td class="pdf-col-center">${formatarNumero(l.percentual * 100, 0, 2)}%</td>
+      </tr>
+    `).join("");
+
+    const linhasTabela2Html = calc.linhasCalculadas.map(l => `
+      <tr>
+        <td class="pdf-col-code">${escaparHtml(l.codigo)}</td>
+        <td class="pdf-col-center">${l.qtd_cod}</td>
+        <td class="pdf-col-right">${formatarMoeda(l.cirurgiao)}</td>
+        <td class="pdf-col-right">${formatarMoeda(l.aux1)}</td>
+        <td class="pdf-col-right">${formatarMoeda(l.aux2)}</td>
+        <td class="pdf-col-right">${formatarMoeda(l.instrumentador)}</td>
+      </tr>
+    `).join("");
+
+    const equipeHtml = montarLinhasEquipePdf(calc);
+
+    return `
+      <div class="pdf-doc-header">
+        <h1>RELATÓRIO EXPLICATIVO DE ORÇAMENTO PARA CIRURGIA HOSPITALAR</h1>
+      </div>
+
+      <table class="pdf-patient-grid">
+        <tr>
+          <td style="width: 58%;">
+            <span class="pdf-field-label">Paciente</span>
+            <span class="pdf-field-value">${escaparHtml(calc.paciente.toUpperCase())}</span>
+          </td>
+          <td style="width: 42%;">
+            <span class="pdf-field-label">Cartão</span>
+            <span class="pdf-field-value">${escaparHtml(calc.cartao || "-")}</span>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <span class="pdf-field-label">Plano</span>
+            <span class="pdf-field-value">${escaparHtml(calc.plano.toUpperCase())}</span>
+          </td>
+          <td>
+            <span class="pdf-field-label">Múltiplo / Valor US/URS/CRS</span>
+            <span class="pdf-field-value">${formatarNumero(calc.multiploReal, 0, 4)} &nbsp;/&nbsp; ${formatarNumero(calc.valorUsReal, 2, 6)}</span>
+          </td>
+        </tr>
+      </table>
+
+      <div class="pdf-intro-box">
+        <p>Em casos de procedimentos e/ou exames diversos no mesmo evento médico, o cálculo dos demais procedimentos deve seguir o percentual previsto nas Condições Gerais da Tabela. O valor apurado pode incidir coparticipação, se houver.</p>
+        <p>Com base nas informações sobre valores de coeficientes e múltiplos de reembolso fornecidos pela operadora Bradesco Saúde através do site <strong>https://www.bradescosaude.com.br</strong>; este orçamento foi emitido com base na seguinte fórmula: <strong>Valor US/URS/CRS x Quantidade US/URS/CRS x Múltiplo de Reembolso = Valor a ser reembolsado.</strong></p>
+      </div>
+
+      <div class="pdf-section-title">PROCEDIMENTO(S) SOLICITADO(S)</div>
+      <table class="pdf-data-table">
+        <thead>
+          <tr>
+            <th style="width: 11%;">CÓDIGO</th>
+            <th class="col-desc-header" style="width: 34%;">DESCRIÇÃO</th>
+            <th style="width: 7%;">QTD<br>COD</th>
+            <th style="width: 8%;">QTD<br>AUX</th>
+            <th style="width: 12%;">QTD<br>US/URS/CRS</th>
+            <th style="width: 11%;">VALOR<br>US/URS/CRS</th>
+            <th style="width: 10%;">MÚLTIPLO<br>REEMB.</th>
+            <th style="width: 7%;">(%)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${linhasTabela1Html}
+        </tbody>
+      </table>
+
+      <div class="pdf-glossary-box">
+        <div class="pdf-glossary-header">CRS (Coeficiente de Reembolso de Seguros), URS (Unidade de Reembolso de Seguros), US (Unidade de Serviço).</div>
+        <ul class="pdf-glossary-list">
+          <li><strong>Valor US/URS/CRS:</strong> unidades expressas em moeda corrente, utilizadas como base para determinar os limites de reembolso das despesas médicas ou de natureza hospitalar, objeto das Condições Gerais. O valor da moeda varia de acordo com o tipo de plano contratado.</li>
+          <li><strong>Quantidade de US/URS/CRS:</strong> prevista na tabela de reembolso de honorários e serviços médicos para cada procedimento.</li>
+          <li><strong>Múltiplo de reembolso:</strong> é o fator multiplicador do plano contratado.</li>
+          <li><strong>Valores limites de reembolso:</strong> é o resultado da multiplicação do valor US/URS/CRS, quantidade de US/URS/CRS e múltiplo de Reembolso.</li>
+        </ul>
+      </div>
+
+      <div class="pdf-section-title">CÁLCULO EXATO DO REEMBOLSO BASEADO NAS INFORMAÇÕES FORNECIDAS PELA OPERADORA</div>
+      <table class="pdf-data-table">
+        <thead>
+          <tr>
+            <th style="width: 14%;">CÓDIGO</th>
+            <th style="width: 14%;">Q. COD<br>AUTORIZADO</th>
+            <th style="width: 18%;">CIRURGIÃO</th>
+            <th style="width: 18%;">AUXILIAR 1 (30%)</th>
+            <th style="width: 18%;">AUXILIAR 2 (20%)</th>
+            <th style="width: 18%;">INSTRUMENTADOR (10%)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${linhasTabela2Html}
+          <tr class="pdf-row-subtotal">
+            <td colspan="2" class="pdf-col-center">TOTAL</td>
+            <td class="pdf-col-right">${formatarMoeda(calc.totCirurgiao)}</td>
+            <td class="pdf-col-right">${formatarMoeda(calc.totAux1)}</td>
+            <td class="pdf-col-right">${formatarMoeda(calc.totAux2)}</td>
+            <td class="pdf-col-right">${formatarMoeda(calc.totInst)}</td>
+          </tr>
+          <tr class="pdf-row-grandtotal">
+            <td colspan="5" style="text-align: right; padding-right: 12px;">TOTAL GERAL DO ORÇAMENTO</td>
+            <td class="pdf-col-right">${formatarMoeda(calc.totalGeral)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      ${equipeHtml ? `
+        <div class="pdf-team-box">
+          <table class="pdf-team-table">
+            ${equipeHtml}
+          </table>
+        </div>
+      ` : ""}
+
+      <div class="pdf-norms-banner">
+        SEGUE ABAIXO ORIENTAÇÕES SOBRE CALCULOS CONFORME DADOS FORNECIDOS PELA OPERADORA BRADESCO SAÚDE ATRAVÉS DO SITE <a href="https://www.bradescosaude.com.br" target="_blank" rel="noopener noreferrer">HTTPS://WWW.BRADESCOSAUDE.COM.BR</a>;
+      </div>
+
+      <p class="pdf-norm-p">2.1. Os atos médicos praticados em regime de urgência ou emergência terão um acréscimo de 30% nas seguintes condições: 1.4. Para o cálculo do valor do procedimento em reais, multiplica-se a quantidade de CRS pelo valor do CRS vigente à época do evento.</p>
+      <p class="pdf-norm-sub">2.1.2. Em qualquer horário nos sábados, domingos e feriados.</p>
+
+      <div class="pdf-norm-section-heading">1. TABELA</div>
+      <p class="pdf-norm-p">1.1. Esta Tabela estabelece os valores de referência para os procedimentos médicos cobertos, de acordo com as condições contratuais das apólices da Bradesco Saúde.</p>
+      <p class="pdf-norm-p">1.2. O Coeficiente de Reembolso de Seguros (CRS) representa a unidade básica para o cálculo desses valores.</p>
+      <p class="pdf-norm-p">1.3. A cada procedimento da Tabela, é atribuída uma quantidade de CRS. O valor do CRS é expresso em reais.</p>
+      <p class="pdf-norm-p">1.4. Para o cálculo do valor do procedimento em reais, multiplica-se a quantidade de CRS pelo valor do CRS vigente à época do evento.</p>
+
+      <div class="pdf-norm-section-heading">2. ATENDIMENTO DE URGÊNCIA E EMERGÊNCIA</div>
+      <p class="pdf-norm-p">2.1. Os atos médicos praticados em regime de urgência ou emergência terão um acréscimo de 30% nas seguintes condições:</p>
+      <p class="pdf-norm-sub">2.1.1. No período compreendido entre 19h e 7h do dia seguinte;</p>
+      <p class="pdf-norm-p">2.1. Os atos médicos praticados em regime de urgência ou emergência terão um acréscimo de 30% nas seguintes condições: 1.4. Para o cálculo do valor do procedimento em reais, multiplica-se a quantidade de CRS pelo valor do CRS vigente à época do evento.</p>
+      <p class="pdf-norm-sub">2.1.2. Em qualquer horário nos sábados, domingos e feriados. Tabela de Reembolso de Honorários e Serviços Médicos Produto Coletivo Empresarial Plano com mais de 100 vidas - posterior ou adaptado à Lei nº 9.656/98</p>
+
+      <div class="pdf-norm-section-heading">3 PROCEDIMENTOS CIRÚRGICOS - NORMAS GERAIS</div>
+      <p class="pdf-norm-p">3.1. Os valores atribuídos a cada procedimento cirúrgico incluem os cuidados pós-operatórios até 10 dias após a data da cirurgia. A partir do 11º dia, quando houver necessidade, o acompanhamento passa a ser valorado de acordo com os critérios estabelecidos para as visitas hospitalares ou para as consultas em consultório.</p>
+      <p class="pdf-norm-p">3.2. Nos casos cirúrgicos em que se fizer necessário o acompanhamento ou assistência de outro especialista, seus honorários serão valorados de acordo com o atendimento prestado e previsto em Tabela na respectiva especialidade.</p>
+
+      <div class="pdf-norm-section-heading">4. VALORAÇÃO DOS ATOS CIRÚRGICOS</div>
+      <p class="pdf-norm-p">4.1. Quando previamente planejada ou quando for verificada, durante o ato cirúrgico, a indicação de intervenção em vários órgãos ou regiões a partir de uma mesma via de acesso, a valoração dos procedimentos corresponderá ao procedimento de maior valor - com base no valor do cirurgião -, acrescido de 50% do previsto para cada um dos demais atos médicos praticados, desde que não haja um código específico previsto para o conjunto.</p>
+      <p class="pdf-norm-p">4.2. Quando ocorrer mais de uma intervenção por diferentes vias de acesso, deve ser adicionado, ao procedimento de maior valor - com base no valor do cirurgião -, 70% do valor de cada um dos demais procedimentos realizados, desde que não haja código específico previsto para o conjunto</p>
+      <p class="pdf-norm-p">4.3. Essas condições aplicam-se às cirurgias bilaterais, realizadas por diferentes incisões (70%) ou pela mesma incisão (50%), exceto se houver código específico previsto.</p>
+      <p class="pdf-norm-p">4.4. Quando duas equipes distintas realizarem simultaneamente atos cirúrgicos diferentes, a cada uma delas será atribuído o valor do procedimento realizado e previsto nesta Tabela.</p>
+      <p class="pdf-norm-p">4.5. Quando um ato cirúrgico for parte integrante de outro, valorar-se-á não o somatório do conjunto, mas exclusivamente o ato principal.</p>
+
+      <div class="pdf-norm-section-heading">5 AUXILIARES</div>
+      <p class="pdf-norm-p">5.1. Os honorários dos médicos auxiliares dos atos cirúrgicos serão fixados nas proporções de 30% dos honorários do cirurgião para o 1º auxiliar, 20% para os 2º e 3º auxiliares, desde que previstos em Tabela, e 10% para o(a) instrumentador(a) devidamente habilitado(a).</p>
+
+      <div class="pdf-doc-footer">${escaparHtml(cidade)}, ${dataHoje}</div>
+    `;
+  }
+
+  function gerarNomeArquivoPdf(paciente) {
+    const nomeLimpo = (paciente || "REEMBOLSO")
+      .toUpperCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^A-Z0-9]+/g, "_")
+      .replace(/^_|_$/g, "");
+    return `RELATORIO_REEMBOLSO_${nomeLimpo || "PACIENTE"}.pdf`;
+  }
+
+  // Botão 1: Impressão nativa / Salvar PDF pelo navegador
+  document.getElementById("btnGerarPdf").addEventListener("click", () => {
+    if (!ultimoCalculoCache || ultimoCalculoCache.linhasCalculadas.length === 0) {
+      alert("Adicione pelo menos um procedimento antes de gerar o PDF.");
+      return;
+    }
+
+    const calc = ultimoCalculoCache;
+    const printContainer = document.getElementById("printDocument");
+    printContainer.innerHTML = construirHtmlDocumentoPdf(calc);
+
+    const tituloOriginal = document.title;
+    document.title = gerarNomeArquivoPdf(calc.paciente).replace(/\.pdf$/i, "");
+
+    window.print();
+
+    setTimeout(() => {
+      document.title = tituloOriginal;
+    }, 500);
+  });
+
+  // Botão 2: Gerar arquivo .PDF real e enviar diretamente via WhatsApp
+  document.getElementById("btnEnviarPdfWhatsapp").addEventListener("click", async () => {
+    if (!ultimoCalculoCache || ultimoCalculoCache.linhasCalculadas.length === 0) {
+      alert("Adicione pelo menos um procedimento antes de enviar o PDF.");
+      return;
+    }
+
+    if (typeof html2pdf === "undefined") {
+      alert("A biblioteca de geração de PDF ainda está carregando. Tente novamente em 2 segundos.");
+      return;
+    }
+
+    const btn = document.getElementById("btnEnviarPdfWhatsapp");
+    const statusEl = document.getElementById("statusPdfWhatsapp");
+    const textoOriginal = btn.innerHTML;
+
+    btn.disabled = true;
+    btn.innerText = "Gerando arquivo PDF...";
+    statusEl.innerText = "";
+
+    const calc = ultimoCalculoCache;
+    const nomeArquivo = gerarNomeArquivoPdf(calc.paciente);
+
+    // Cria um contêiner temporário fora da tela com largura fixa A4 (182mm úteis) para renderizar o PDF fielmente
+    const tempWrapper = document.createElement("div");
+    tempWrapper.style.position = "fixed";
+    tempWrapper.style.left = "-9999px";
+    tempWrapper.style.top = "0";
+    tempWrapper.style.width = "182mm";
+    tempWrapper.style.background = "#ffffff";
+    tempWrapper.className = "pdf-render-scope";
+    tempWrapper.innerHTML = construirHtmlDocumentoPdf(calc);
+    document.body.appendChild(tempWrapper);
+
+    try {
+      const opt = {
+        margin: [14, 14, 15, 14],
+        filename: nomeArquivo,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: {
+          mode: ["css", "legacy"],
+          avoid: ["tr", ".pdf-glossary-box", ".pdf-team-box", ".pdf-norm-p", ".pdf-norm-sub", ".pdf-doc-footer"]
+        }
+      };
+
+      const pdfBlob = await html2pdf().set(opt).from(tempWrapper).outputPdf("blob");
+      const arquivoPdf = new File([pdfBlob], nomeArquivo, { type: "application/pdf" });
+
+      // 1. Celulares (Android / iPhone): abre o compartilhamento direto para o WhatsApp com o .PDF anexado
+      if (navigator.canShare && navigator.canShare({ files: [arquivoPdf] })) {
+        await navigator.share({
+          files: [arquivoPdf],
+          title: "Relatório Explicativo de Orçamento",
+          text: `Relatório de Reembolso - ${calc.paciente}`
+        });
+        statusEl.innerText = "✓ PDF compartilhado!";
+      } else {
+        // 2. Computador: baixa o arquivo .PDF e abre o WhatsApp Web para anexar
+        const urlBlob = URL.createObjectURL(pdfBlob);
+        const link = document.createElement("a");
+        link.href = urlBlob;
+        link.download = nomeArquivo;
+        link.click();
+
+        window.open("https://web.whatsapp.com/", "_blank");
+        statusEl.innerText = `✓ Arquivo "${nomeArquivo}" baixado! Arraste ou anexe o PDF na conversa do WhatsApp Web.`;
+      }
+    } catch (err) {
+      if (err.name !== "AbortError") {
+        console.error("Erro ao gerar PDF para WhatsApp:", err);
+        alert("Erro ao gerar PDF: " + err.message);
+      }
+    } finally {
+      document.body.removeChild(tempWrapper);
+      btn.disabled = false;
+      btn.innerHTML = textoOriginal;
+    }
+  });
 
   // Gera a imagem da segunda tabela e envia via WhatsApp / Compartilhamento
   document.getElementById("btnEnviarWhatsapp").addEventListener("click", async () => {

@@ -17,7 +17,7 @@
     .row { display: flex; gap: 16px; flex-wrap: wrap; }
     .row .form-group { flex: 1; min-width: 200px; }
     label { font-size: 0.86rem; font-weight: 600; margin-bottom: 5px; color: #334155; }
-    input, select {
+    input, select, textarea {
       padding: 9px 12px;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
@@ -26,10 +26,56 @@
       color: #0f172a;
       width: 100%;
     }
-    input:focus, select:focus { outline: none; border-color: #2563eb; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; }
+    textarea {
+      resize: vertical;
+      min-height: 78px;
+      line-height: 1.45;
+      font-family: inherit;
+    }
     .status { font-size: 0.85rem; margin-top: 6px; color: #64748b; }
     .erro { color: #dc2626; font-weight: 600; }
     .hidden { display: none !important; }
+
+    /* Bloco de Observações Internas */
+    .obs-box {
+      background: #fefce8;
+      border: 1px solid #fde047;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-top: 6px;
+    }
+    .obs-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .obs-header label {
+      margin-bottom: 0;
+      color: #854d0e;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .obs-tag-interna {
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: #fef08a;
+      color: #854d0e;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid #facc15;
+    }
+    .obs-box textarea {
+      background: #fff;
+      border-color: #eab308;
+    }
+    .obs-box textarea:focus {
+      border-color: #ca8a04;
+    }
 
     /* Barra de Progresso do Relatório Atual */
     .progresso-painel {
@@ -80,6 +126,7 @@
       font-size: 0.77rem;
       color: #64748b;
       margin-top: 5px;
+      line-height: 1.35;
     }
     .acoes-rascunho {
       display: flex;
@@ -119,7 +166,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
       gap: 12px;
-      max-height: 310px;
+      max-height: 340px;
       overflow-y: auto;
       padding-right: 4px;
     }
@@ -158,6 +205,20 @@
       font-size: 0.78rem;
       color: #475569;
       margin-top: 3px;
+    }
+    .rascunho-obs-preview {
+      margin-top: 7px;
+      padding: 5px 8px;
+      background: #fefce8;
+      border-left: 3px solid #eab308;
+      border-radius: 4px;
+      font-size: 0.76rem;
+      color: #713f12;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
     .rascunho-footer {
       display: flex;
@@ -918,7 +979,7 @@
       <span>Relatórios / Rascunhos Salvos <span class="badge" id="badgeRascunhos">0</span></span>
       <button type="button" class="btn-auto" id="btnAtualizarRascunhos" style="width: auto;">Atualizar Lista</button>
     </h2>
-    <input type="text" id="buscaRascunhoInput" class="search-box" placeholder="Buscar relatório salvo por nome do paciente, plano ou cartão...">
+    <input type="text" id="buscaRascunhoInput" class="search-box" placeholder="Buscar relatório salvo por nome do paciente, plano, cartão ou observação...">
     <div id="listaRascunhosContainer">
       <div style="font-size: 0.86rem; color: #64748b;">Carregando relatórios salvos...</div>
     </div>
@@ -941,7 +1002,7 @@
         <div class="progresso-track">
           <div class="progresso-fill" id="progressoBarraFill"></div>
         </div>
-        <div class="progresso-faltando" id="progressoFaltandoTexto">Faltam: Plano, Paciente, Cartão, Valor US, Cirurgião, Procedimentos</div>
+        <div class="progresso-faltando" id="progressoFaltandoTexto">Faltam: Plano, Paciente, Cartão, Valor US, Procedimentos, Cirurgião (Nome, CRO, CPF)</div>
       </div>
 
       <div class="acoes-rascunho">
@@ -995,6 +1056,15 @@
         <label for="cidadeInput">Cidade de Emissão (Rodapé PDF)</label>
         <input type="text" id="cidadeInput" value="RECIFE" placeholder="Ex: RECIFE">
       </div>
+    </div>
+
+    <!-- Aba / Campo de Observações Internas (Não sai na imagem nem no PDF) -->
+    <div class="obs-box">
+      <div class="obs-header">
+        <label for="observacoesInput">Observações de Acompanhamento do Paciente</label>
+        <span class="obs-tag-interna">Uso interno (não sai no PDF nem na imagem)</span>
+      </div>
+      <textarea id="observacoesInput" placeholder="Anote aqui pendências de documentos, número de protocolo, contato com o paciente, status da prévia no convênio, etc..."></textarea>
     </div>
 
     <div class="status" id="statusMsg"></div>
@@ -1230,7 +1300,7 @@
     </div>
 
     <div class="form-group hidden" id="grupoCoren">
-      <label for="cadCoren">COREN</label>
+      <label for="cadCoren">COREN (Opcional)</label>
       <input type="text" id="cadCoren" placeholder="Ex: 654321">
     </div>
 
@@ -1343,7 +1413,6 @@
   // ==================== CÁLCULO DE PORCENTAGEM E GRADIENTE (0% VERMELHO -> 100% VERDE) ====================
 
   function corGradientePorcentagem(pct) {
-    // 0% -> matiz 0 (vermelho intenso) | 50% -> matiz 45 (âmbar/amarelo) | 100% -> matiz 138 (verde esmeralda)
     const clamped = Math.max(0, Math.min(100, pct));
     const hue = Math.round((clamped / 100) * 138);
     const lightness = clamped > 40 && clamped < 70 ? 40 : 42;
@@ -1351,14 +1420,57 @@
   }
 
   function calcularProgressoDados(dados) {
+    const procs = Array.isArray(dados.procedimentos) ? dados.procedimentos : [];
+    const maxAuxProcedimentos = procs.reduce((acc, p) => Math.max(acc, Number(p.quant_aux) || 0), 0);
+
+    const cirurgiao = dados.cirurgiao || null;
+    const aux1 = dados.aux1 || null;
+    const aux2 = dados.aux2 || null;
+    const inst = dados.instrumentador || null;
+
+    const exigeAux1 = maxAuxProcedimentos >= 1 || Boolean(aux1 && (aux1.nome || aux1.registro || aux1.cpf));
+    const exigeAux2 = maxAuxProcedimentos >= 2 || Boolean(aux2 && (aux2.nome || aux2.registro || aux2.cpf));
+    const exigeInst = procs.length > 0 || Boolean(inst && (inst.nome || inst.cpf));
+
     const criterios = [
+      // Dados principais do reembolso
       { ok: Boolean(dados.plano && dados.plano.trim()), label: "Plano" },
       { ok: Boolean(dados.paciente && dados.paciente.trim()), label: "Paciente" },
       { ok: Boolean(dados.cartao && dados.cartao.trim()), label: "Cartão" },
       { ok: lerDecimal(dados.valorUs) > 0 && lerDecimal(dados.multiplo) > 0, label: "Valor US" },
-      { ok: Boolean(dados.cirurgiao && dados.cirurgiao.nome && dados.cirurgiao.nome.trim()), label: "Cirurgião" },
-      { ok: Array.isArray(dados.procedimentos) && dados.procedimentos.length > 0, label: "Procedimentos" }
+      { ok: procs.length > 0, label: "Procedimentos" },
+
+      // Cirurgião: Nome, CRO e CPF
+      { ok: Boolean(cirurgiao?.nome && cirurgiao.nome.trim()), label: "Cirurgião (Nome)" },
+      { ok: Boolean(cirurgiao?.registro && cirurgiao.registro.trim()), label: "Cirurgião (CRO)" },
+      { ok: Boolean(cirurgiao?.cpf && cirurgiao.cpf.trim()), label: "Cirurgião (CPF)" }
     ];
+
+    // 1º Auxiliar (quando exigido pelo procedimento ou preenchido): Nome, CRO e CPF
+    if (exigeAux1) {
+      criterios.push(
+        { ok: Boolean(aux1?.nome && aux1.nome.trim()), label: "1º Auxiliar (Nome)" },
+        { ok: Boolean(aux1?.registro && aux1.registro.trim()), label: "1º Auxiliar (CRO)" },
+        { ok: Boolean(aux1?.cpf && aux1.cpf.trim()), label: "1º Auxiliar (CPF)" }
+      );
+    }
+
+    // 2º Auxiliar (quando exigido pelo procedimento ou preenchido): Nome, CRO e CPF
+    if (exigeAux2) {
+      criterios.push(
+        { ok: Boolean(aux2?.nome && aux2.nome.trim()), label: "2º Auxiliar (Nome)" },
+        { ok: Boolean(aux2?.registro && aux2.registro.trim()), label: "2º Auxiliar (CRO)" },
+        { ok: Boolean(aux2?.cpf && aux2.cpf.trim()), label: "2º Auxiliar (CPF)" }
+      );
+    }
+
+    // Instrumentador(a): apenas Nome e CPF (COREN não entra na porcentagem)
+    if (exigeInst) {
+      criterios.push(
+        { ok: Boolean(inst?.nome && inst.nome.trim()), label: "Instrumentador (Nome)" },
+        { ok: Boolean(inst?.cpf && inst.cpf.trim()), label: "Instrumentador (CPF)" }
+      );
+    }
 
     const concluidos = criterios.filter(c => c.ok).length;
     const porcentagem = Math.round((concluidos / criterios.length) * 100);
@@ -1375,6 +1487,9 @@
       valorUs: document.getElementById("valorUsInput").value,
       multiplo: document.getElementById("multiploInput").value,
       cirurgiao: equipeSelecionada.cirurgiao,
+      aux1: equipeSelecionada.aux1,
+      aux2: equipeSelecionada.aux2,
+      instrumentador: equipeSelecionada.instrumentador,
       procedimentos: procedimentosSelecionados
     };
 
@@ -1391,7 +1506,7 @@
     fillEl.style.backgroundColor = cor;
 
     if (faltando.length === 0) {
-      faltandoEl.innerHTML = `<span style="color: #166534; font-weight: 600;">✓ Todos os dados principais estão preenchidos! Pronto para gerar o PDF.</span>`;
+      faltandoEl.innerHTML = `<span style="color: #166534; font-weight: 600;">✓ Todos os dados obrigatórios e da equipe estão preenchidos! Pronto para gerar o PDF.</span>`;
     } else {
       faltandoEl.innerText = `Faltam: ${faltando.join(", ")}`;
     }
@@ -1452,6 +1567,7 @@
             paciente: String(r.paciente || payload.paciente || "Paciente sem nome"),
             plano: String(r.plano || payload.plano || "Plano não selecionado"),
             cartao: String(r.cartao || payload.cartao || ""),
+            observacoes: String(r.observacoes ?? payload.observacoes ?? ""),
             porcentagem: Number(r.porcentagem ?? 0),
             total_geral: Number(r.total_geral ?? 0),
             atualizado_em: String(r.atualizado_em || ""),
@@ -1478,7 +1594,8 @@
     const filtrados = rascunhosSalvos.filter(r =>
       r.paciente.toLowerCase().includes(termo) ||
       r.plano.toLowerCase().includes(termo) ||
-      r.cartao.toLowerCase().includes(termo)
+      r.cartao.toLowerCase().includes(termo) ||
+      r.observacoes.toLowerCase().includes(termo)
     );
 
     if (filtrados.length === 0) {
@@ -1494,6 +1611,9 @@
         valorUs: r.payload?.valorUs,
         multiplo: r.payload?.multiplo,
         cirurgiao: r.payload?.equipe?.cirurgiao,
+        aux1: r.payload?.equipe?.aux1,
+        aux2: r.payload?.equipe?.aux2,
+        instrumentador: r.payload?.equipe?.instrumentador,
         procedimentos: r.payload?.procedimentos || []
       });
 
@@ -1502,6 +1622,7 @@
       const dataFormatada = r.atualizado_em
         ? new Date(r.atualizado_em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })
         : "";
+      const obsTexto = (r.observacoes || "").trim();
 
       return `
         <div class="rascunho-card ${emEdicao ? "em-edicao" : ""}">
@@ -1526,6 +1647,8 @@
                 : `Faltam: ${escaparHtml(prog.faltando.join(", "))}`}
               ${r.total_geral > 0 ? ` &bull; Total: <strong>${formatarMoeda(r.total_geral)}</strong>` : ""}
             </div>
+
+            ${obsTexto ? `<div class="rascunho-obs-preview" title="${escaparHtml(obsTexto)}"><strong>Obs:</strong> ${escaparHtml(obsTexto)}</div>` : ""}
           </div>
 
           <div class="rascunho-footer">
@@ -1551,9 +1674,10 @@
     const multiplo = document.getElementById("multiploInput").value.trim();
     const valorUs = document.getElementById("valorUsInput").value.trim();
     const cidade = document.getElementById("cidadeInput").value.trim();
+    const observacoes = document.getElementById("observacoesInput").value.trim();
 
-    if (!paciente && !plano && procedimentosSelecionados.length === 0) {
-      alert("Preencha pelo menos o nome do paciente ou selecione um plano antes de salvar.");
+    if (!paciente && !plano && procedimentosSelecionados.length === 0 && !observacoes) {
+      alert("Preencha pelo menos o nome do paciente, uma observação ou selecione um plano antes de salvar.");
       return;
     }
 
@@ -1566,6 +1690,7 @@
       multiplo,
       valorUs,
       cidade,
+      observacoes,
       equipe: equipeSelecionada,
       procedimentos: procedimentosSelecionados,
       uidPrincipalManual,
@@ -1576,6 +1701,7 @@
       paciente: paciente || "Paciente sem nome",
       plano: plano || "Plano não selecionado",
       cartao,
+      observacoes,
       porcentagem,
       total_geral: ultimoCalculoCache ? ultimoCalculoCache.totalGeral : 0,
       atualizado_em: new Date().toISOString(),
@@ -1619,7 +1745,6 @@
     document.getElementById("textoBtnSalvarRascunho").innerText = "Atualizar Rascunho";
     document.getElementById("statusRascunhoSalvo").innerText = `Editando relatório salvo de "${item.paciente}".`;
 
-    // Restaura campos principais
     const selectPlano = document.getElementById("planoSelect");
     selectPlano.value = p.plano || "";
 
@@ -1639,8 +1764,8 @@
     document.getElementById("multiploInput").value = p.multiplo || "1";
     document.getElementById("valorUsInput").value = p.valorUs || "";
     document.getElementById("cidadeInput").value = p.cidade || "RECIFE";
+    document.getElementById("observacoesInput").value = p.observacoes ?? item.observacoes ?? "";
 
-    // Restaura equipe cirúrgica
     equipeSelecionada = {
       cirurgiao: p.equipe?.cirurgiao || null,
       aux1: p.equipe?.aux1 || null,
@@ -1654,7 +1779,6 @@
       renderizarBoxEdicaoSlot(slot);
     });
 
-    // Restaura procedimentos selecionados e configurações
     procedimentosSelecionados = Array.isArray(p.procedimentos) ? p.procedimentos : [];
     uidPrincipalManual = p.uidPrincipalManual ?? null;
     percentuaisCustomizados = p.percentuaisCustomizados || {};
@@ -1693,6 +1817,7 @@
     document.getElementById("multiploInput").value = "1";
     document.getElementById("valorUsInput").value = "";
     document.getElementById("cidadeInput").value = "RECIFE";
+    document.getElementById("observacoesInput").value = "";
 
     equipeSelecionada = { cirurgiao: null, aux1: null, aux2: null, instrumentador: null };
     ["cirurgiao", "aux1", "aux2", "instrumentador"].forEach((slot) => {
@@ -1820,7 +1945,7 @@
       listaEl.innerHTML = filtrados.map(p => {
         const regTexto = p.tipo === "doutor"
           ? `CRO${p.uf ? "-" + p.uf : ""}: ${p.registro || "Não inf."}`
-          : `COREN: ${p.registro || "Não inf."}`;
+          : `COREN: ${p.registro || "Opcional"}`;
         return `
           <div class="dropdown-item" onmousedown="selecionarProfissionalSlot('${slot}', '${p.id}')">
             <strong>${escaparHtml(p.nome || "(Sem nome)")}</strong>
@@ -1894,7 +2019,7 @@
           </div>
         ` : `
           <div>
-            <span class="edit-mini-label">COREN</span>
+            <span class="edit-mini-label">COREN (Opcional)</span>
             <input type="text" id="ed_reg_${slot}" value="${escaparHtml(p.registro)}" oninput="sincronizarEdicaoLocal('${slot}')">
           </div>
         `}

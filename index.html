@@ -23,11 +23,201 @@
       font-size: 0.94rem;
       background: #fff;
       color: #0f172a;
+      width: 100%;
     }
     input:focus, select:focus { outline: none; border-color: #2563eb; }
     .status { font-size: 0.85rem; margin-top: 6px; color: #64748b; }
     .erro { color: #dc2626; font-weight: 600; }
-    .hidden { display: none; }
+    .hidden { display: none !important; }
+
+    /* Equipe Cirúrgica - Grid e Autocomplete */
+    .equipe-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .equipe-slot {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 14px;
+      background: #f8fafc;
+      position: relative;
+    }
+    .slot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .slot-header label { margin-bottom: 0; font-size: 0.88rem; color: #0f172a; }
+    .btn-cad-mini {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 5px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-cad-mini:hover { background: #1d4ed8; }
+    .dropdown-wrap { position: relative; }
+    .dropdown-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      max-height: 210px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+      z-index: 50;
+    }
+    .dropdown-item {
+      padding: 9px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.86rem;
+    }
+    .dropdown-item:last-child { border-bottom: none; }
+    .dropdown-item:hover { background: #eff6ff; }
+    .dropdown-item strong { display: block; color: #0f172a; }
+    .dropdown-item span { font-size: 0.76rem; color: #64748b; }
+    .dropdown-empty { padding: 10px 12px; font-size: 0.82rem; color: #64748b; }
+
+    /* Box de Edição da Pessoa Selecionada */
+    .edit-person-box {
+      margin-top: 10px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .edit-person-box input, .edit-person-box select {
+      padding: 6px 8px;
+      font-size: 0.84rem;
+    }
+    .edit-mini-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+      display: block;
+    }
+    .edit-row-2 {
+      display: flex;
+      gap: 8px;
+    }
+    .edit-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .btn-save-edit {
+      background: #16a34a;
+      color: #fff;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      cursor: pointer;
+      flex: 1;
+    }
+    .btn-save-edit:hover { background: #15803d; }
+    .btn-clear-slot {
+      background: #e2e8f0;
+      color: #334155;
+      border: none;
+      padding: 5px 9px;
+      border-radius: 5px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-clear-slot:hover { background: #cbd5e1; }
+
+    /* Modal de Cadastro de Profissional */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+    }
+    .modal-card {
+      background: #fff;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 460px;
+      padding: 24px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+    }
+    .modal-card h3 {
+      margin: 0 0 16px 0;
+      font-size: 1.15rem;
+      color: #0f172a;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 10px;
+    }
+    .tipo-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .tipo-btn {
+      flex: 1;
+      padding: 9px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #f8fafc;
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: #475569;
+      cursor: pointer;
+    }
+    .tipo-btn.ativo {
+      background: #2563eb;
+      color: #fff;
+      border-color: #1d4ed8;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .btn-cancelar {
+      background: #e2e8f0;
+      color: #334155;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-salvar-modal {
+      background: #10b981;
+      color: #fff;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-salvar-modal:hover { background: #059669; }
 
     /* Lista de procedimentos disponíveis */
     .search-box { width: 100%; margin-bottom: 10px; }
@@ -231,14 +421,15 @@
     .capture-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       flex-wrap: wrap;
       gap: 8px;
       margin-bottom: 10px;
       padding-bottom: 8px;
       border-bottom: 2px solid #1e3a8a;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       color: #0f172a;
+      line-height: 1.45;
     }
   </style>
 </head>
@@ -256,13 +447,20 @@
         <select id="planoSelect" style="flex: 1;">
           <option value="">Carregando planos...</option>
         </select>
-        <button type="button" class="btn-auto" id="btnRecarregarPlanos" style="padding: 0 14px;">Recarregar</button>
+        <button type="button" class="btn-auto" id="btnRecarregarPlanos" style="padding: 0 14px; width: auto;">Recarregar</button>
       </div>
     </div>
 
-    <div class="form-group">
-      <label for="pacienteInput">Nome Completo do Paciente</label>
-      <input type="text" id="pacienteInput" placeholder="Digite o nome completo do paciente">
+    <div class="row">
+      <div class="form-group" style="flex: 2; min-width: 240px;">
+        <label for="pacienteInput">Nome Completo do Paciente</label>
+        <input type="text" id="pacienteInput" placeholder="Digite o nome completo do paciente">
+      </div>
+
+      <div class="form-group" style="flex: 1; min-width: 200px;">
+        <label for="cartaoInput">Número do Cartão do Plano</label>
+        <input type="text" id="cartaoInput" placeholder="Digite o número da carteirinha">
+      </div>
     </div>
 
     <div class="row">
@@ -280,6 +478,68 @@
     <div class="status" id="statusMsg"></div>
   </div>
 
+  <!-- Equipe Cirúrgica -->
+  <div class="card">
+    <h2>
+      <span>Equipe Cirúrgica</span>
+      <span class="badge" id="badgeProfissionais">0 cadastrados</span>
+    </h2>
+
+    <div class="equipe-grid">
+      <!-- Cirurgião -->
+      <div class="equipe-slot" data-slot="cirurgiao">
+        <div class="slot-header">
+          <label for="busca_cirurgiao">Cirurgião</label>
+          <button type="button" class="btn-cad-mini" onclick="abrirModalCadastro('doutor', 'cirurgiao')">+ Cadastrar</button>
+        </div>
+        <div class="dropdown-wrap">
+          <input type="text" id="busca_cirurgiao" autocomplete="off" placeholder="Clique ou digite para buscar Doutor...">
+          <div class="dropdown-list hidden" id="lista_cirurgiao"></div>
+        </div>
+        <div id="edit_cirurgiao"></div>
+      </div>
+
+      <!-- Primeiro Auxiliar -->
+      <div class="equipe-slot" data-slot="aux1">
+        <div class="slot-header">
+          <label for="busca_aux1">Primeiro Auxiliar</label>
+          <button type="button" class="btn-cad-mini" onclick="abrirModalCadastro('doutor', 'aux1')">+ Cadastrar</button>
+        </div>
+        <div class="dropdown-wrap">
+          <input type="text" id="busca_aux1" autocomplete="off" placeholder="Clique ou digite para buscar Doutor...">
+          <div class="dropdown-list hidden" id="lista_aux1"></div>
+        </div>
+        <div id="edit_aux1"></div>
+      </div>
+
+      <!-- Segundo Auxiliar -->
+      <div class="equipe-slot" data-slot="aux2">
+        <div class="slot-header">
+          <label for="busca_aux2">Segundo Auxiliar</label>
+          <button type="button" class="btn-cad-mini" onclick="abrirModalCadastro('doutor', 'aux2')">+ Cadastrar</button>
+        </div>
+        <div class="dropdown-wrap">
+          <input type="text" id="busca_aux2" autocomplete="off" placeholder="Clique ou digite para buscar Doutor...">
+          <div class="dropdown-list hidden" id="lista_aux2"></div>
+        </div>
+        <div id="edit_aux2"></div>
+      </div>
+
+      <!-- Instrumentador -->
+      <div class="equipe-slot" data-slot="instrumentador">
+        <div class="slot-header">
+          <label for="busca_instrumentador">Instrumentador</label>
+          <button type="button" class="btn-cad-mini" onclick="abrirModalCadastro('instrumentador', 'instrumentador')">+ Cadastrar</button>
+        </div>
+        <div class="dropdown-wrap">
+          <input type="text" id="busca_instrumentador" autocomplete="off" placeholder="Clique ou digite para buscar Instrumentador...">
+          <div class="dropdown-list hidden" id="lista_instrumentador"></div>
+        </div>
+        <div id="edit_instrumentador"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Lista de Procedimentos Disponíveis no Plano Selecionado -->
   <div class="card hidden" id="cardDisponiveis">
     <h2>
@@ -294,7 +554,7 @@
   <div class="card hidden" id="cardSelecionados">
     <h2>
       <span>Procedimentos Adicionados <span class="badge" id="badgeSelecionados">0</span></span>
-      <button type="button" class="btn-auto" id="btnAutoPrincipal" title="Selecionar automaticamente o de maior lucro">Auto (Maior Lucro)</button>
+      <button type="button" class="btn-auto" style="width: auto;" id="btnAutoPrincipal" title="Selecionar automaticamente o de maior lucro">Auto (Maior Lucro)</button>
     </h2>
     <div class="table-wrap">
       <table>
@@ -319,7 +579,7 @@
     <h2>
       <span>Prévia do Cálculo de Reembolso</span>
       <div style="display: flex; gap: 8px; align-items: center;">
-        <button type="button" class="btn-auto" id="btnResetPct" style="background: #64748b;" title="Restaurar percentuais padrão (100% / 50%)">Resetar %</button>
+        <button type="button" class="btn-auto" id="btnResetPct" style="background: #64748b; width: auto;" title="Restaurar percentuais padrão (100% / 50%)">Resetar %</button>
         <span class="badge" id="badgePrincipalInfo">Modo: Automático (Maior Lucro)</span>
       </div>
     </h2>
@@ -395,9 +655,55 @@
 
 </div>
 
+<!-- Modal de Cadastro de Profissional (Doutor / Instrumentador) -->
+<div class="modal-overlay hidden" id="modalCadastro">
+  <div class="modal-card">
+    <h3>Cadastrar Profissional</h3>
+
+    <label>Tipo de Profissional</label>
+    <div class="tipo-selector">
+      <button type="button" class="tipo-btn ativo" id="btnTipoDoutor" onclick="selecionarTipoModal('doutor')">Doutor</button>
+      <button type="button" class="tipo-btn" id="btnTipoInstrumentador" onclick="selecionarTipoModal('instrumentador')">Instrumentador</button>
+    </div>
+
+    <div class="form-group">
+      <label for="cadNome">Nome Completo</label>
+      <input type="text" id="cadNome" placeholder="Ex: Dr. João da Silva">
+    </div>
+
+    <!-- Campos específicos para Doutor (CRO + UF) -->
+    <div class="row" id="grupoCroUf">
+      <div class="form-group" style="flex: 2; min-width: 140px;">
+        <label for="cadCro">CRO</label>
+        <input type="text" id="cadCro" placeholder="Ex: 12345">
+      </div>
+      <div class="form-group" style="flex: 1; min-width: 90px;">
+        <label for="cadUf">UF (CRO)</label>
+        <select id="cadUf"></select>
+      </div>
+    </div>
+
+    <!-- Campo específico para Instrumentador (COREN sem UF) -->
+    <div class="form-group hidden" id="grupoCoren">
+      <label for="cadCoren">COREN</label>
+      <input type="text" id="cadCoren" placeholder="Ex: 654321">
+    </div>
+
+    <div class="form-group">
+      <label for="cadCpf">CPF</label>
+      <input type="text" id="cadCpf" placeholder="000.000.000-00" maxlength="14">
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-cancelar" onclick="fecharModalCadastro()">Cancelar</button>
+      <button type="button" class="btn-salvar-modal" id="btnSalvarCadastro" onclick="salvarNovoProfissional()">Salvar Cadastro</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getFirestore, collection, getDocs, addDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyC4XH3VcBpGiJfRVAN4YErIG0dGR2d1s6E",
@@ -411,7 +717,16 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // Restrições conhecidas das cartas da Bradesco Saúde por código TUSS
+  const UFS_BRASIL = [
+    "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
+    "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"
+  ];
+
+  // Popula select de UFs no modal (PE como padrão)
+  document.getElementById("cadUf").innerHTML = UFS_BRASIL
+    .map(uf => `<option value="${uf}" ${uf === "PE" ? "selected" : ""}>${uf}</option>`)
+    .join("");
+
   const REGRAS_TUSS_CONHECIDAS = {
     "30713137": { maxAux: 0, motivo: "Punção articular (30713137) não contempla 1º nem 2º auxiliar na tabela TUSS." },
     "30713153": { maxAux: 1, motivo: "Artroscopia diagnóstica (30713153) não contempla 2º auxiliar na tabela TUSS." }
@@ -422,6 +737,17 @@
   let procedimentosSelecionados = [];
   let uidPrincipalManual = null;
   let percentuaisCustomizados = {};
+
+  // Estado da Equipe Cirúrgica
+  let todosProfissionais = [];
+  let equipeSelecionada = {
+    cirurgiao: null,
+    aux1: null,
+    aux2: null,
+    instrumentador: null
+  };
+  let tipoModalAtual = "doutor";
+  let slotOrigemModal = "cirurgiao";
 
   function lerDecimal(valor) {
     if (typeof valor === "number") return isNaN(valor) ? 0 : valor;
@@ -446,27 +772,72 @@
     });
   }
 
-  async function buscarViaRest() {
-    const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/procedimentos?pageSize=500&key=${firebaseConfig.apiKey}`;
+  function formatarCpf(v) {
+    const d = String(v || "").replace(/\D/g, "").slice(0, 11);
+    if (d.length <= 3) return d;
+    if (d.length <= 6) return `${d.slice(0,3)}.${d.slice(3)}`;
+    if (d.length <= 9) return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6)}`;
+    return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
+  }
+
+  document.getElementById("cadCpf").addEventListener("input", (e) => {
+    e.target.value = formatarCpf(e.target.value);
+  });
+
+  // Leitura REST fallback para qualquer coleção
+  async function buscarColecaoRest(nomeColecao) {
+    const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${nomeColecao}?pageSize=500&key=${firebaseConfig.apiKey}`;
     const resp = await fetch(url);
     const json = await resp.json();
     if (!resp.ok) {
       throw new Error(json?.error?.message || `HTTP ${resp.status}`);
     }
     const lista = [];
-    (json.documents || []).forEach((doc) => {
-      const f = doc.fields || {};
-      const lerCampo = (c) => c?.stringValue ?? (c?.doubleValue !== undefined ? Number(c.doubleValue) : (c?.integerValue !== undefined ? Number(c.integerValue) : ""));
-      lista.push({
-        id: doc.name.split("/").pop(),
-        plano: lerCampo(f.plano),
-        codigo: lerCampo(f.codigo),
-        nome: lerCampo(f.nome),
-        qtd_us: lerCampo(f.qtd_us),
-        quant_aux: lerCampo(f.quant_aux)
+    (json.documents || []).forEach((docItem) => {
+      const f = docItem.fields || {};
+      const obj = { id: docItem.name.split("/").pop() };
+      Object.keys(f).forEach((k) => {
+        const c = f[k];
+        obj[k] = c?.stringValue ?? (c?.doubleValue !== undefined ? Number(c.doubleValue) : (c?.integerValue !== undefined ? Number(c.integerValue) : ""));
       });
+      lista.push(obj);
     });
     return lista;
+  }
+
+  async function carregarColecaoComFallback(nomeColecao) {
+    try {
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT_SDK")), 6000));
+      const snap = await Promise.race([getDocs(collection(db, nomeColecao)), timeout]);
+      const lista = [];
+      snap.forEach((docSnap) => {
+        lista.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      return lista;
+    } catch (err) {
+      console.warn(`Fallback REST para ${nomeColecao}:`, err.message);
+      return await buscarColecaoRest(nomeColecao);
+    }
+  }
+
+  async function carregarProfissionais() {
+    try {
+      const regs = await carregarColecaoComFallback("profissionais");
+      todosProfissionais = regs
+        .map(p => ({
+          id: p.id,
+          tipo: p.tipo === "instrumentador" ? "instrumentador" : "doutor",
+          nome: String(p.nome || ""),
+          registro: String(p.registro || p.cro || p.coren || ""),
+          uf: String(p.uf || ""),
+          cpf: String(p.cpf || "")
+        }))
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+
+      document.getElementById("badgeProfissionais").innerText = `${todosProfissionais.length} cadastrado(s)`;
+    } catch (e) {
+      console.error("Erro ao carregar profissionais:", e);
+    }
   }
 
   async function inicializarDados() {
@@ -475,20 +846,13 @@
 
     select.innerHTML = `<option value="">Carregando planos...</option>`;
     status.className = "status";
-    status.innerText = "Buscando planos no Firebase...";
+    status.innerText = "Buscando planos e profissionais no Firebase...";
 
     try {
-      let registros = [];
-      try {
-        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT_SDK")), 6000));
-        const snap = await Promise.race([getDocs(collection(db, "procedimentos")), timeout]);
-        snap.forEach((docSnap) => {
-          registros.push({ id: docSnap.id, ...docSnap.data() });
-        });
-      } catch (sdkErr) {
-        console.warn("SDK demorou ou falhou, usando REST fallback:", sdkErr.message);
-        registros = await buscarViaRest();
-      }
+      const [registros] = await Promise.all([
+        carregarColecaoComFallback("procedimentos"),
+        carregarProfissionais()
+      ]);
 
       const planosUnicos = new Set();
       todosProcedimentos = [];
@@ -530,6 +894,254 @@
       status.innerText = "Erro ao conectar com o Firebase: " + e.message;
     }
   }
+
+  // ==================== GESTÃO DA EQUIPE CIRÚRGICA ====================
+
+  function tipoEsperadoNoSlot(slot) {
+    return slot === "instrumentador" ? "instrumentador" : "doutor";
+  }
+
+  function renderizarDropdownSlot(slot) {
+    const input = document.getElementById(`busca_${slot}`);
+    const listaEl = document.getElementById(`lista_${slot}`);
+    const termo = (input.value || "").toLowerCase().trim();
+    const tipoFiltro = tipoEsperadoNoSlot(slot);
+
+    const filtrados = todosProfissionais.filter(p => {
+      if (p.tipo !== tipoFiltro) return false;
+      if (!termo) return true;
+      return (
+        p.nome.toLowerCase().includes(termo) ||
+        p.registro.toLowerCase().includes(termo) ||
+        p.cpf.toLowerCase().includes(termo)
+      );
+    });
+
+    if (filtrados.length === 0) {
+      listaEl.innerHTML = `<div class="dropdown-empty">Nenhum ${tipoFiltro === "doutor" ? "doutor" : "instrumentador"} encontrado. Clique em <strong>+ Cadastrar</strong>.</div>`;
+    } else {
+      listaEl.innerHTML = filtrados.map(p => {
+        const regTexto = p.tipo === "doutor"
+          ? `CRO${p.uf ? "-" + p.uf : ""}: ${p.registro || "Não inf."}`
+          : `COREN: ${p.registro || "Não inf."}`;
+        return `
+          <div class="dropdown-item" onmousedown="selecionarProfissionalSlot('${slot}', '${p.id}')">
+            <strong>${p.nome || "(Sem nome)"}</strong>
+            <span>${regTexto} &bull; CPF: ${p.cpf || "Não inf."}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    listaEl.classList.remove("hidden");
+  }
+
+  ["cirurgiao", "aux1", "aux2", "instrumentador"].forEach((slot) => {
+    const input = document.getElementById(`busca_${slot}`);
+    const listaEl = document.getElementById(`lista_${slot}`);
+
+    input.addEventListener("focus", () => renderizarDropdownSlot(slot));
+    input.addEventListener("click", () => renderizarDropdownSlot(slot));
+    input.addEventListener("input", () => renderizarDropdownSlot(slot));
+    input.addEventListener("blur", () => {
+      setTimeout(() => listaEl.classList.add("hidden"), 180);
+    });
+  });
+
+  window.selecionarProfissionalSlot = (slot, profId) => {
+    const prof = todosProfissionais.find(p => p.id === profId);
+    if (!prof) return;
+
+    equipeSelecionada[slot] = { ...prof };
+    document.getElementById(`busca_${slot}`).value = prof.nome;
+    document.getElementById(`lista_${slot}`).classList.add("hidden");
+    renderizarBoxEdicaoSlot(slot);
+    atualizarTudo();
+  };
+
+  window.limparSlotEquipe = (slot) => {
+    equipeSelecionada[slot] = null;
+    document.getElementById(`busca_${slot}`).value = "";
+    document.getElementById(`edit_${slot}`).innerHTML = "";
+    atualizarTudo();
+  };
+
+  function renderizarBoxEdicaoSlot(slot) {
+    const container = document.getElementById(`edit_${slot}`);
+    const p = equipeSelecionada[slot];
+
+    if (!p) {
+      container.innerHTML = "";
+      return;
+    }
+
+    const ehDoutor = p.tipo === "doutor";
+    const optionsUf = UFS_BRASIL.map(uf => `<option value="${uf}" ${p.uf === uf ? "selected" : ""}>${uf}</option>`).join("");
+
+    container.innerHTML = `
+      <div class="edit-person-box">
+        <div>
+          <span class="edit-mini-label">Nome Completo</span>
+          <input type="text" id="ed_nome_${slot}" value="${p.nome.replace(/"/g, "&quot;")}" oninput="sincronizarEdicaoLocal('${slot}')">
+        </div>
+        ${ehDoutor ? `
+          <div class="edit-row-2">
+            <div style="flex: 2;">
+              <span class="edit-mini-label">CRO</span>
+              <input type="text" id="ed_reg_${slot}" value="${p.registro.replace(/"/g, "&quot;")}" oninput="sincronizarEdicaoLocal('${slot}')">
+            </div>
+            <div style="flex: 1;">
+              <span class="edit-mini-label">UF</span>
+              <select id="ed_uf_${slot}" onchange="sincronizarEdicaoLocal('${slot}')">${optionsUf}</select>
+            </div>
+          </div>
+        ` : `
+          <div>
+            <span class="edit-mini-label">COREN</span>
+            <input type="text" id="ed_reg_${slot}" value="${p.registro.replace(/"/g, "&quot;")}" oninput="sincronizarEdicaoLocal('${slot}')">
+          </div>
+        `}
+        <div>
+          <span class="edit-mini-label">CPF</span>
+          <input type="text" id="ed_cpf_${slot}" maxlength="14" value="${p.cpf.replace(/"/g, "&quot;")}" oninput="this.value = window.formatarCpfGlobal(this.value); sincronizarEdicaoLocal('${slot}')">
+        </div>
+        <div class="edit-actions">
+          <button type="button" class="btn-save-edit" id="btn_save_${slot}" onclick="salvarEdicaoProfissional('${slot}')">Salvar Alterações</button>
+          <button type="button" class="btn-clear-slot" onclick="limparSlotEquipe('${slot}')">Limpar</button>
+        </div>
+      </div>
+    `;
+  }
+
+  window.formatarCpfGlobal = formatarCpf;
+
+  window.sincronizarEdicaoLocal = (slot) => {
+    const p = equipeSelecionada[slot];
+    if (!p) return;
+    p.nome = document.getElementById(`ed_nome_${slot}`).value;
+    p.registro = document.getElementById(`ed_reg_${slot}`).value;
+    if (p.tipo === "doutor") {
+      p.uf = document.getElementById(`ed_uf_${slot}`).value;
+    }
+    p.cpf = document.getElementById(`ed_cpf_${slot}`).value;
+    document.getElementById(`busca_${slot}`).value = p.nome;
+    atualizarTudo();
+  };
+
+  window.salvarEdicaoProfissional = async (slot) => {
+    const p = equipeSelecionada[slot];
+    if (!p || !p.id) return;
+
+    const btn = document.getElementById(`btn_save_${slot}`);
+    btn.disabled = true;
+    btn.innerText = "Salvando...";
+
+    const dadosAtualizados = {
+      nome: p.nome.trim(),
+      registro: p.registro.trim(),
+      uf: p.tipo === "doutor" ? (p.uf || "PE") : "",
+      cpf: p.cpf.trim()
+    };
+
+    try {
+      await updateDoc(doc(db, "profissionais", p.id), dadosAtualizados);
+      const idx = todosProfissionais.findIndex(item => item.id === p.id);
+      if (idx !== -1) {
+        todosProfissionais[idx] = { ...todosProfissionais[idx], ...dadosAtualizados };
+      }
+      ["cirurgiao", "aux1", "aux2", "instrumentador"].forEach((outroSlot) => {
+        if (outroSlot !== slot && equipeSelecionada[outroSlot]?.id === p.id) {
+          equipeSelecionada[outroSlot] = { ...equipeSelecionada[outroSlot], ...dadosAtualizados };
+          document.getElementById(`busca_${outroSlot}`).value = dadosAtualizados.nome;
+          renderizarBoxEdicaoSlot(outroSlot);
+        }
+      });
+
+      btn.innerText = "✓ Salvo!";
+      setTimeout(() => { btn.innerText = "Salvar Alterações"; btn.disabled = false; }, 1600);
+    } catch (e) {
+      console.error("Erro ao atualizar profissional:", e);
+      alert("Erro ao salvar alterações: " + e.message);
+      btn.innerText = "Salvar Alterações";
+      btn.disabled = false;
+    }
+  };
+
+  // Modal de Cadastro
+  window.abrirModalCadastro = (tipoPadrao, slotOrigem) => {
+    slotOrigemModal = slotOrigem;
+    document.getElementById("cadNome").value = "";
+    document.getElementById("cadCro").value = "";
+    document.getElementById("cadUf").value = "PE";
+    document.getElementById("cadCoren").value = "";
+    document.getElementById("cadCpf").value = "";
+    selecionarTipoModal(tipoPadrao);
+    document.getElementById("modalCadastro").classList.remove("hidden");
+    setTimeout(() => document.getElementById("cadNome").focus(), 50);
+  };
+
+  window.fecharModalCadastro = () => {
+    document.getElementById("modalCadastro").classList.add("hidden");
+  };
+
+  window.selecionarTipoModal = (tipo) => {
+    tipoModalAtual = tipo;
+    const btnDoutor = document.getElementById("btnTipoDoutor");
+    const btnInst = document.getElementById("btnTipoInstrumentador");
+    const grupoCro = document.getElementById("grupoCroUf");
+    const grupoCoren = document.getElementById("grupoCoren");
+
+    if (tipo === "doutor") {
+      btnDoutor.classList.add("ativo");
+      btnInst.classList.remove("ativo");
+      grupoCro.classList.remove("hidden");
+      grupoCoren.classList.add("hidden");
+    } else {
+      btnInst.classList.add("ativo");
+      btnDoutor.classList.remove("ativo");
+      grupoCoren.classList.remove("hidden");
+      grupoCro.classList.add("hidden");
+    }
+  };
+
+  window.salvarNovoProfissional = async () => {
+    const btn = document.getElementById("btnSalvarCadastro");
+    btn.disabled = true;
+    btn.innerText = "Salvando...";
+
+    const novoRegistro = {
+      tipo: tipoModalAtual,
+      nome: document.getElementById("cadNome").value.trim(),
+      registro: tipoModalAtual === "doutor"
+        ? document.getElementById("cadCro").value.trim()
+        : document.getElementById("cadCoren").value.trim(),
+      uf: tipoModalAtual === "doutor" ? document.getElementById("cadUf").value : "",
+      cpf: document.getElementById("cadCpf").value.trim(),
+      criado_em: new Date().toISOString()
+    };
+
+    try {
+      const docRef = await addDoc(collection(db, "profissionais"), novoRegistro);
+      const salvo = { id: docRef.id, ...novoRegistro };
+      todosProfissionais.push(salvo);
+      todosProfissionais.sort((a, b) => a.nome.localeCompare(b.nome));
+      document.getElementById("badgeProfissionais").innerText = `${todosProfissionais.length} cadastrado(s)`;
+
+      if (tipoEsperadoNoSlot(slotOrigemModal) === salvo.tipo) {
+        selecionarProfissionalSlot(slotOrigemModal, salvo.id);
+      }
+
+      fecharModalCadastro();
+    } catch (e) {
+      console.error("Erro ao cadastrar profissional:", e);
+      alert("Erro ao cadastrar profissional: " + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerText = "Salvar Cadastro";
+    }
+  };
+
+  // ==================== PROCEDIMENTOS E CÁLCULO ====================
 
   function aoMudarPlano() {
     const plano = document.getElementById("planoSelect").value;
@@ -847,6 +1459,14 @@
     }).join("");
   }
 
+  function formatarResumoProfissional(p, rotulo) {
+    if (!p || !p.nome) return "";
+    const reg = p.tipo === "doutor"
+      ? (p.registro ? ` (CRO${p.uf ? "-" + p.uf : ""}: ${p.registro})` : "")
+      : (p.registro ? ` (COREN: ${p.registro})` : "");
+    return `<div><strong>${rotulo}:</strong> ${p.nome}${reg}</div>`;
+  }
+
   function renderizarTabelasCalculo(idxPrincipal) {
     const cardCalc = document.getElementById("cardCalculo");
     const tbodySol = document.getElementById("tabelaSolicitados");
@@ -866,16 +1486,29 @@
 
     const plano = document.getElementById("planoSelect").value || "-";
     const paciente = document.getElementById("pacienteInput").value.trim() || "Não informado";
+    const cartao = document.getElementById("cartaoInput").value.trim();
     const valorUsReal = lerDecimal(document.getElementById("valorUsInput").value);
     const multiploReal = lerDecimal(document.getElementById("multiploInput").value);
     const valorUsRanking = valorUsReal > 0 ? valorUsReal : 1;
     const multiploRanking = multiploReal > 0 ? multiploReal : 1;
 
-    // Atualiza o cabeçalho que aparece na imagem gerada
     const dataHoje = new Date().toLocaleDateString("pt-BR");
+    const htmlEquipe = [
+      formatarResumoProfissional(equipeSelecionada.cirurgiao, "Cirurgião"),
+      formatarResumoProfissional(equipeSelecionada.aux1, "1º Auxiliar"),
+      formatarResumoProfissional(equipeSelecionada.aux2, "2º Auxiliar"),
+      formatarResumoProfissional(equipeSelecionada.instrumentador, "Instrumentador")
+    ].filter(Boolean).join("");
+
     cabecalhoImg.innerHTML = `
-      <div><strong>Paciente:</strong> ${paciente}</div>
-      <div><strong>Plano:</strong> ${plano} &bull; <strong>Data:</strong> ${dataHoje}</div>
+      <div>
+        <div><strong>Paciente:</strong> ${paciente}${cartao ? ` &nbsp;|&nbsp; <strong>Cartão:</strong> ${cartao}` : ""}</div>
+        ${htmlEquipe}
+      </div>
+      <div style="text-align: right;">
+        <div><strong>Plano:</strong> ${plano}</div>
+        <div><strong>Data:</strong> ${dataHoje}</div>
+      </div>
     `;
 
     const principal = procedimentosSelecionados[idxPrincipal];
@@ -993,7 +1626,6 @@
     statusWa.innerText = "";
 
     try {
-      // Garante captura sem cortes horizontais mesmo em telas menores
       const canvas = await html2canvas(area, {
         scale: 2,
         backgroundColor: "#ffffff",
@@ -1007,7 +1639,6 @@
       const nomeArquivo = `calculo_reembolso_${nomePaciente}.png`;
       const arquivo = new File([blob], nomeArquivo, { type: "image/png" });
 
-      // 1. Celulares (iOS / Android): abre o compartilhamento direto para o WhatsApp com a imagem anexada
       if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
         await navigator.share({
           files: [arquivo],
@@ -1016,7 +1647,6 @@
         });
         statusWa.innerText = "✓ Imagem compartilhada!";
       } else {
-        // 2. Desktop: copia imagem para área de transferência, baixa o PNG e abre o WhatsApp Web
         let copiado = false;
         try {
           if (navigator.clipboard && window.ClipboardItem) {
@@ -1051,6 +1681,7 @@
   document.getElementById("planoSelect").addEventListener("change", aoMudarPlano);
   document.getElementById("buscaProcInput").addEventListener("input", renderizarDisponiveis);
   document.getElementById("pacienteInput").addEventListener("input", atualizarTudo);
+  document.getElementById("cartaoInput").addEventListener("input", atualizarTudo);
   document.getElementById("valorUsInput").addEventListener("input", atualizarTudo);
   document.getElementById("multiploInput").addEventListener("input", atualizarTudo);
 

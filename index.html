@@ -67,6 +67,47 @@
     }
     .btn-add:hover { background: #059669; }
 
+    /* Painel de Alertas */
+    .alert-box {
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+    .alert-warn {
+      background: #fffbeb;
+      border: 1px solid #f59e0b;
+      color: #92400e;
+    }
+    .alert-ok {
+      background: #f0fdf4;
+      border: 1px solid #22c55e;
+      color: #166534;
+    }
+    .alert-title {
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .alert-list {
+      margin: 4px 0 0 18px;
+      padding: 0;
+    }
+    .alert-list li { margin-bottom: 4px; }
+    .checklist-box {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-top: 18px;
+      font-size: 0.83rem;
+      color: #475569;
+    }
+    .checklist-box strong { color: #0f172a; }
+
     /* Tabelas */
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.86rem; margin-top: 6px; }
@@ -246,6 +287,9 @@
       </div>
     </h2>
 
+    <!-- Painel de Validação e Alertas da Operadora -->
+    <div id="painelAlertas"></div>
+
     <div class="table-wrap">
       <table>
         <thead>
@@ -286,6 +330,15 @@
         <tbody id="tabelaResultados"></tbody>
       </table>
     </div>
+
+    <div class="checklist-box">
+      <strong>Checklist Preventivo Bradesco Saúde (Antes de Protocolar):</strong>
+      <ul class="alert-list" style="margin-top: 6px;">
+        <li>Discrimine na Nota Fiscal / Recibo os valores separados de <strong>Cirurgião, 1º Auxiliar, 2º Auxiliar e Instrumentador</strong> exatamente dentro dos tetos acima (nunca lance procedimento com valor R$ 0,00).</li>
+        <li>Para recibos de Pessoa Física, utilize obrigatoriamente o <strong>Receita Saúde</strong> (IN RFB nº 2.240/2024).</li>
+        <li>Anexe <strong>Relatório Médico/Odontológico</strong>, <strong>Boletim Operatório</strong> comprovando todos os códigos e <strong>Laudo Anatomopatológico</strong> (quando houver).</li>
+      </ul>
+    </div>
   </div>
 
 </div>
@@ -305,6 +358,12 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+
+  // Restrições conhecidas das cartas da Bradesco Saúde por código TUSS
+  const REGRAS_TUSS_CONHECIDAS = {
+    "30713137": { maxAux: 0, motivo: "Punção articular (30713137) não contempla 1º nem 2º auxiliar na tabela TUSS." },
+    "30713153": { maxAux: 1, motivo: "Artroscopia diagnóstica (30713153) não contempla 2º auxiliar na tabela TUSS." }
+  };
 
   let todosProcedimentos = [];
   let procedimentosDoPlano = [];
@@ -335,7 +394,6 @@
     });
   }
 
-  // Fallback rápido via API REST caso o canal WebChannel do SDK trave
   async function buscarViaRest() {
     const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/procedimentos?pageSize=500&key=${firebaseConfig.apiKey}`;
     const resp = await fetch(url);
@@ -395,7 +453,8 @@
             codigo: String(dados.codigo || ""),
             nome: String(dados.nome || ""),
             qtd_us: lerDecimal(dados.qtd_us),
-            quant_aux: auxNormalizado
+            quant_aux: auxNormalizado,
+            quant_aux_original: auxNormalizado
           });
         }
       });
@@ -488,6 +547,7 @@
         ...item,
         vezes: 1,
         quant_aux: Number(item.quant_aux) || 0,
+        quant_aux_original: Number(item.quant_aux_original) || 0,
         uid: Date.now() + Math.random()
       });
     }
@@ -622,6 +682,63 @@
     return indicePrincipal;
   }
 
+  // Gera os avisos em tempo real com base nas regras das cartas da Bradesco Saúde
+  function renderizarAlertas(linhasCalculadas, valorUs, multiplo, paciente) {
+    const container = document.getElementById("painelAlertas");
+    const avisos = [];
+
+    if (!paciente.trim()) {
+      avisos.push("Preencha o <strong>Nome Completo do Paciente</strong> antes de gerar o relatório.");
+    }
+
+    if (valorUs <= 0) {
+      avisos.push("O <strong>Valor US/URS/CRS</strong> está zerado ou vazio. Nenhum procedimento pode ser apresentado com valor R$ 0,00 à operadora.");
+    }
+
+    if (multiplo <= 0) {
+      avisos.push("O <strong>Múltiplo de Reembolso (Fator)</strong> está zerado. Verifique o fator contratual do plano (geralmente 1 ou 2).");
+    }
+
+    // Verifica regras específicas de auxiliares por procedimento
+    procedimentosSelecionados.forEach((proc) => {
+      const regra = REGRAS_TUSS_CONHECIDAS[proc.codigo];
+      if (regra && proc.quant_aux > regra.maxAux) {
+        avisos.push(`<strong>Risco de Glosa TUSS (${proc.codigo}):</strong> ${regra.motivo} Você selecionou ${proc.quant_aux} auxiliar(es).`);
+      } else if (proc.quant_aux > proc.quant_aux_original) {
+        avisos.push(`<strong>Atenção aos Auxiliares (${proc.codigo}):</strong> Este procedimento está cadastrado com ${proc.quant_aux_original} auxiliar(es), mas foi alterado para ${proc.quant_aux}. Auxiliares acima da tabela TUSS são glosados pela Bradesco.`);
+      }
+    });
+
+    // Verifica percentuais fora do padrão (100% na 1ª linha e 50% nas demais)
+    linhasCalculadas.forEach((l, index) => {
+      const pctInt = Math.round(l.percentual * 100);
+      if (index === 0 && pctInt !== 100) {
+        avisos.push(`O procedimento principal (<strong>${l.codigo}</strong>) está com <strong>${pctInt}%</strong> em vez de 100%. Confirme se há redutor contratual na apólice.`);
+      }
+      if (index > 0 && pctInt > 50) {
+        avisos.push(`O procedimento adicional <strong>${l.codigo}</strong> está com <strong>${pctInt}%</strong> (acima dos 50% padrão de mesma via). Percentuais como 70% ou 100% exigem comprovação de vias de acesso diferentes no boletim operatório.`);
+      }
+    });
+
+    if (avisos.length === 0) {
+      container.innerHTML = `
+        <div class="alert-box alert-ok">
+          <div class="alert-title">✓ Tudo em conformidade com as regras de cálculo da operadora</div>
+          <div>Procedimento principal maximizando o retorno, equipe dentro do limite TUSS e valores arredondados por função.</div>
+        </div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div class="alert-box alert-warn">
+          <div class="alert-title">⚠ Pontos de atenção para evitar glosas na operadora (${avisos.length}):</div>
+          <ul class="alert-list">
+            ${avisos.map(a => `<li>${a}</li>`).join("")}
+          </ul>
+        </div>
+      `;
+    }
+  }
+
   function atualizarTudo() {
     const idxPrincipal = obterIndicePrincipal();
     renderizarSelecionados(idxPrincipal);
@@ -697,6 +814,7 @@
       ? "Modo: Principal selecionado manualmente"
       : "Modo: Automático (Maior Lucro)";
 
+    const paciente = document.getElementById("pacienteInput").value || "";
     const valorUsReal = lerDecimal(document.getElementById("valorUsInput").value);
     const multiploReal = lerDecimal(document.getElementById("multiploInput").value);
     const valorUsRanking = valorUsReal > 0 ? valorUsReal : 1;
@@ -729,6 +847,8 @@
       linha.isPrincipal = false;
       linhasCalculadas.push(linha);
     });
+
+    renderizarAlertas(linhasCalculadas, valorUsReal, multiploReal, paciente);
 
     // Tabela 1: Procedimentos Solicitados
     tbodySol.innerHTML = linhasCalculadas.map(l => `
@@ -800,6 +920,7 @@
 
   document.getElementById("planoSelect").addEventListener("change", aoMudarPlano);
   document.getElementById("buscaProcInput").addEventListener("input", renderizarDisponiveis);
+  document.getElementById("pacienteInput").addEventListener("input", atualizarTudo);
   document.getElementById("valorUsInput").addEventListener("input", atualizarTudo);
   document.getElementById("multiploInput").addEventListener("input", atualizarTudo);
 

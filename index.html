@@ -174,9 +174,12 @@
 
     <div class="form-group">
       <label for="planoSelect">Plano de Saúde</label>
-      <select id="planoSelect">
-        <option value="">Carregando planos...</option>
-      </select>
+      <div style="display: flex; gap: 10px;">
+        <select id="planoSelect" style="flex: 1;">
+          <option value="">Carregando planos...</option>
+        </select>
+        <button type="button" class="btn-auto" id="btnRecarregarPlanos" style="padding: 0 14px;">Recarregar</button>
+      </div>
     </div>
 
     <div class="form-group">
@@ -289,7 +292,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { initializeFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyC4XH3VcBpGiJfRVAN4YErIG0dGR2d1s6E",
@@ -301,9 +304,7 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  const db = initializeFirestore(app, {
-    experimentalForceLongPolling: true
-  });
+  const db = getFirestore(app);
 
   let todosProcedimentos = [];
   let procedimentosDoPlano = [];
@@ -311,9 +312,10 @@
   let uidPrincipalManual = null;
   let percentuaisCustomizados = {};
 
-  function lerDecimal(str) {
-    if (str === null || str === undefined || str === "") return 0;
-    const limpo = String(str).trim().replace(/\s+/g, "").replace(",", ".");
+  function lerDecimal(valor) {
+    if (typeof valor === "number") return isNaN(valor) ? 0 : valor;
+    if (!valor) return 0;
+    const limpo = String(valor).trim().replace(/\s+/g, "").replace(",", ".");
     const num = parseFloat(limpo);
     return isNaN(num) ? 0 : num;
   }
@@ -333,23 +335,65 @@
     });
   }
 
+  // Fallback rápido via API REST caso o canal WebChannel do SDK trave
+  async function buscarViaRest() {
+    const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/procedimentos?pageSize=500&key=${firebaseConfig.apiKey}`;
+    const resp = await fetch(url);
+    const json = await resp.json();
+    if (!resp.ok) {
+      throw new Error(json?.error?.message || `HTTP ${resp.status}`);
+    }
+    const lista = [];
+    (json.documents || []).forEach((doc) => {
+      const f = doc.fields || {};
+      const lerCampo = (c) => c?.stringValue ?? (c?.doubleValue !== undefined ? Number(c.doubleValue) : (c?.integerValue !== undefined ? Number(c.integerValue) : ""));
+      lista.push({
+        id: doc.name.split("/").pop(),
+        plano: lerCampo(f.plano),
+        codigo: lerCampo(f.codigo),
+        nome: lerCampo(f.nome),
+        qtd_us: lerCampo(f.qtd_us),
+        quant_aux: lerCampo(f.quant_aux)
+      });
+    });
+    return lista;
+  }
+
   async function inicializarDados() {
     const select = document.getElementById("planoSelect");
     const status = document.getElementById("statusMsg");
 
+    select.innerHTML = `<option value="">Carregando planos...</option>`;
+    status.className = "status";
+    status.innerText = "Buscando planos no Firebase...";
+
     try {
-      const snap = await getDocs(collection(db, "procedimentos"));
+      let registros = [];
+      try {
+        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT_SDK")), 6000));
+        const snap = await Promise.race([getDocs(collection(db, "procedimentos")), timeout]);
+        snap.forEach((docSnap) => {
+          registros.push({ id: docSnap.id, ...docSnap.data() });
+        });
+      } catch (sdkErr) {
+        console.warn("SDK demorou ou falhou, usando REST fallback:", sdkErr.message);
+        registros = await buscarViaRest();
+      }
+
       const planosUnicos = new Set();
       todosProcedimentos = [];
 
-      snap.forEach((docSnap) => {
-        const dados = docSnap.data();
-        if (dados.plano) {
-          planosUnicos.add(dados.plano);
-          const auxNormalizado = Math.min(2, Math.max(0, parseInt(dados.quant_aux, 10) || 0));
+      registros.forEach((dados) => {
+        if (dados && dados.plano) {
+          const nomePlano = String(dados.plano).trim();
+          planosUnicos.add(nomePlano);
+          const auxRaw = Number(dados.quant_aux);
+          const auxNormalizado = isNaN(auxRaw) ? 0 : Math.min(2, Math.max(0, Math.round(auxRaw)));
           todosProcedimentos.push({
-            id: docSnap.id,
-            ...dados,
+            id: dados.id,
+            plano: nomePlano,
+            codigo: String(dados.codigo || ""),
+            nome: String(dados.nome || ""),
             qtd_us: lerDecimal(dados.qtd_us),
             quant_aux: auxNormalizado
           });
@@ -360,14 +404,16 @@
 
       if (listaPlanos.length === 0) {
         select.innerHTML = `<option value="">Nenhum plano cadastrado no Firebase</option>`;
+        status.innerText = `Conexão OK, mas nenhum procedimento foi encontrado na coleção "procedimentos".`;
         return;
       }
 
       select.innerHTML = `<option value="">Selecione um plano de saúde...</option>` +
         listaPlanos.map(plano => `<option value="${plano}">${plano}</option>`).join("");
+      status.innerText = `${listaPlanos.length} plano(s) carregado(s) (${todosProcedimentos.length} procedimentos).`;
 
     } catch (e) {
-      console.error(e);
+      console.error("Erro Firebase:", e);
       select.innerHTML = `<option value="">Erro ao carregar planos</option>`;
       status.className = "status erro";
       status.innerText = "Erro ao conectar com o Firebase: " + e.message;
@@ -497,11 +543,8 @@
     atualizarTudo();
   });
 
-  // Valor Base = QTD COD * QTD US/URS/CRS * VALOR US/URS/CRS * MÚLTIPLO DE REEMBOLSO
-  // Cirurgião = Valor Base * Percentual
-  // Auxiliar 1 (30%) = Cirurgião * 0.30 (se quant_aux >= 1)
-  // Auxiliar 2 (20%) = Cirurgião * 0.20 (se quant_aux >= 2)
-  // Instrumentador (10%) = Cirurgião * 0.10
+  document.getElementById("btnRecarregarPlanos").addEventListener("click", inicializarDados);
+
   function calcularLinha(proc, qtdCod, percentual, valorUs, multiplo, chaveLinha = "") {
     const qtdUs = Number(proc.qtd_us) || 0;
     const qtdAux = Number(proc.quant_aux) || 0;
@@ -671,7 +714,16 @@
     const linhasCalculadas = [];
 
     for (let i = 0; i < principal.vezes; i++) {
-      const chave = `${principal.uid}_${i}`; const pctPadrao = i === 0 ? 1.0 : 0.5; const pct = percentuaisCustomizados[chave] !== undefined ? percentuaisCustomizados[chave] : pctPadrao; const linha = calcularLinha(principal, 1, pct, valorUsReal, multiploReal, chave); linha.isPrincipal = true; linhasCalculadas.push(linha); }  secundarios.forEach((proc) => { const chave = `${proc.uid}_0`;
+      const chave = `${principal.uid}_${i}`;
+      const pctPadrao = i === 0 ? 1.0 : 0.5;
+      const pct = percentuaisCustomizados[chave] !== undefined ? percentuaisCustomizados[chave] : pctPadrao;
+      const linha = calcularLinha(principal, 1, pct, valorUsReal, multiploReal, chave);
+      linha.isPrincipal = true;
+      linhasCalculadas.push(linha);
+    }
+
+    secundarios.forEach((proc) => {
+      const chave = `${proc.uid}_0`;
       const pct = percentuaisCustomizados[chave] !== undefined ? percentuaisCustomizados[chave] : 0.5;
       const linha = calcularLinha(proc, proc.vezes, pct, valorUsReal, multiploReal, chave);
       linha.isPrincipal = false;
@@ -683,7 +735,8 @@
       <tr>
         <td><strong>${l.codigo}</strong></td>
         <td>
-          ${l.nome}${l.isPrincipal ? '<span class="tag-principal">PRINCIPAL</span>' : ''}
+          ${l.nome}
+          ${l.isPrincipal ? '<span class="tag-principal">PRINCIPAL</span>' : ''}
         </td>
         <td class="center"><strong>${l.qtd_cod}</strong></td>
         <td class="center">${l.quant_aux}</td>
@@ -734,4 +787,23 @@
       <tr class="row-total">
         <td colspan="3" class="num">TOTAL POR EQUIPE</td>
         <td class="num">${formatarMoeda(totCirurgiao)}</td>
-        <td class="num">${formatarMoeda(totAux
+        <td class="num">${formatarMoeda(totAux1)}</td>
+        <td class="num">${formatarMoeda(totAux2)}</td>
+        <td class="num">${formatarMoeda(totInst)}</td>
+      </tr>
+      <tr class="row-total-geral">
+        <td colspan="6" class="num">TOTAL GERAL DO REEMBOLSO</td>
+        <td class="num">${formatarMoeda(totalGeral)}</td>
+      </tr>
+    `;
+  }
+
+  document.getElementById("planoSelect").addEventListener("change", aoMudarPlano);
+  document.getElementById("buscaProcInput").addEventListener("input", renderizarDisponiveis);
+  document.getElementById("valorUsInput").addEventListener("input", atualizarTudo);
+  document.getElementById("multiploInput").addEventListener("input", atualizarTudo);
+
+  inicializarDados();
+</script>
+</body>
+</html>

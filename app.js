@@ -196,42 +196,30 @@ function atualizarBarraProgressoAtual() {
   return { porcentagem, faltando };
 }
 
-// ==================== PERSISTÊNCIA DE RASCUNHOS NO FIREBASE ====================
+// ==================== CÁLCULO DE MEUS GANHOS ====================
 
-async function buscarColecaoRest(nomeColecao) {
-  const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${nomeColecao}?pageSize=500&key=${firebaseConfig.apiKey}`;
-  const resp = await fetch(url);
-  const json = await resp.json();
-  if (!resp.ok) {
-    throw new Error(json?.error?.message || `HTTP ${resp.status}`);
-  }
-  const lista = [];
-  (json.documents || []).forEach((docItem) => {
-    const f = docItem.fields || {};
-    const obj = { id: docItem.name.split("/").pop() };
-    Object.keys(f).forEach((k) => {
-      const c = f[k];
-      obj[k] = c?.stringValue ?? (c?.doubleValue !== undefined ? Number(c.doubleValue) : (c?.integerValue !== undefined ? Number(c.integerValue) : ""));
-    });
-    lista.push(obj);
-  });
-  return lista;
+function calcularMeusGanhos(totalGeral) {
+  const isFixo = document.getElementById("checkGanhoFixo350")?.checked || false;
+  if (isFixo) return 350;
+
+  const dezPorCento = arredondar2((Number(totalGeral) || 0) * 0.10);
+  return dezPorCento > 350 ? dezPorCento : 350;
 }
 
-async function carregarColecaoComFallback(nomeColecao) {
-  try {
-    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT_SDK")), 6000));
-    const snap = await Promise.race([getDocs(collection(db, nomeColecao)), timeout]);
-    const lista = [];
-    snap.forEach((docSnap) => {
-      lista.push({ id: docSnap.id, ...docSnap.data() });
-    });
-    return lista;
-  } catch (err) {
-    console.warn(`Fallback REST para ${nomeColecao}:`, err.message);
-    return await buscarColecaoRest(nomeColecao);
+function atualizarPainelMeusGanhos() {
+  const totalGeral = ultimoCalculoCache ? ultimoCalculoCache.totalGeral : 0;
+  const valorGanho = calcularMeusGanhos(totalGeral);
+  const valorEl = document.getElementById("valorMeusGanhosTexto");
+  if (valorEl) {
+    valorEl.innerText = formatarMoeda(valorGanho);
   }
 }
+
+document.getElementById("checkGanhoFixo350").addEventListener("change", () => {
+  atualizarPainelMeusGanhos();
+});
+
+// ==================== PERSISTÊNCIA DE PACIENTES NO FIREBASE ====================
 
 async function carregarRascunhosSalvos() {
   try {
@@ -244,6 +232,7 @@ async function carregarRascunhosSalvos() {
         } catch (_) {
           payload = {};
         }
+        const enviadoFlag = r.enviado === true || r.enviado === "true" || payload.enviado === true;
         return {
           id: r.id,
           paciente: String(r.paciente || payload.paciente || "Paciente sem nome"),
@@ -252,6 +241,9 @@ async function carregarRascunhosSalvos() {
           observacoes: String(r.observacoes ?? payload.observacoes ?? ""),
           porcentagem: Number(r.porcentagem ?? 0),
           total_geral: Number(r.total_geral ?? 0),
+          meus_ganhos: Number(r.meus_ganhos ?? payload.meus_ganhos ?? 350),
+          ganho_fixo_350: Boolean(r.ganho_fixo_350 ?? payload.ganho_fixo_350 ?? false),
+          enviado: enviadoFlag,
           atualizado_em: String(r.atualizado_em || ""),
           payload
         };
@@ -260,32 +252,18 @@ async function carregarRascunhosSalvos() {
 
     renderizarListaRascunhos();
   } catch (e) {
-    console.error("Erro ao carregar relatórios salvos:", e);
+    console.error("Erro ao carregar pacientes:", e);
     document.getElementById("listaRascunhosContainer").innerHTML =
-      `<div style="font-size: 0.85rem; color: #dc2626;">Não foi possível carregar os relatórios salvos: ${escaparHtml(e.message)}</div>`;
+      `<div style="font-size: 0.85rem; color: #dc2626;">Não foi possível carregar os pacientes: ${escaparHtml(e.message)}</div>`;
   }
 }
 
-function renderizarListaRascunhos() {
-  const container = document.getElementById("listaRascunhosContainer");
-  const badge = document.getElementById("badgeRascunhos");
-  const termo = (document.getElementById("buscaRascunhoInput").value || "").toLowerCase().trim();
-
-  badge.innerText = rascunhosSalvos.length;
-
-  const filtrados = rascunhosSalvos.filter(r =>
-    r.paciente.toLowerCase().includes(termo) ||
-    r.plano.toLowerCase().includes(termo) ||
-    r.cartao.toLowerCase().includes(termo) ||
-    r.observacoes.toLowerCase().includes(termo)
-  );
-
-  if (filtrados.length === 0) {
-    container.innerHTML = `<div style="font-size: 0.86rem; color: #64748b;">Nenhum relatório salvo encontrado. Preencha os dados abaixo e clique em <strong>Salvar Rascunho</strong>.</div>`;
-    return;
+function montarHtmlCardsPacientes(lista, vazioTexto) {
+  if (lista.length === 0) {
+    return `<div style="font-size: 0.86rem; color: #64748b;">${vazioTexto}</div>`;
   }
 
-  container.innerHTML = `<div class="rascunhos-grid">` + filtrados.map(r => {
+  return `<div class="rascunhos-grid">` + lista.map(r => {
     const prog = calcularProgressoDados({
       plano: r.plano !== "Plano não selecionado" ? r.plano : "",
       paciente: r.paciente !== "Paciente sem nome" ? r.paciente : "",
@@ -311,7 +289,10 @@ function renderizarListaRascunhos() {
         <div>
           <div class="rascunho-header">
             <div>
-              <div class="rascunho-nome">${escaparHtml(r.paciente)}</div>
+              <div class="rascunho-nome">
+                ${escaparHtml(r.paciente)}
+                ${r.enviado ? '<span class="tag-enviado-card">ENVIADO</span>' : ''}
+              </div>
               <div class="rascunho-meta">
                 <strong>${escaparHtml(r.plano)}</strong>${r.cartao ? ` &bull; Cartão: ${escaparHtml(r.cartao)}` : ""}
               </div>
@@ -336,16 +317,51 @@ function renderizarListaRascunhos() {
         <div class="rascunho-footer">
           <span style="font-size: 0.72rem; color: #64748b;">${dataFormatada}</span>
           <button type="button" class="btn-abrir-rascunho" onclick="carregarRascunhoNoFormulario('${r.id}')">
-            ${emEdicao ? "Em edição" : "Continuar"}
+            ${emEdicao ? "Em edição" : (r.enviado ? "Abrir" : "Continuar")}
           </button>
-          <button type="button" class="btn-del-rascunho" title="Excluir rascunho" onclick="excluirRascunho('${r.id}')">✕</button>
+          <button type="button" class="btn-del-rascunho" title="Excluir paciente" onclick="excluirRascunho('${r.id}')">✕</button>
         </div>
       </div>
     `;
   }).join("") + `</div>`;
 }
 
-document.getElementById("btnSalvarRascunho").addEventListener("click", async () => {
+function renderizarListaRascunhos() {
+  const containerPendentes = document.getElementById("listaRascunhosContainer");
+  const badgePendentes = document.getElementById("badgeRascunhos");
+  const termoPendentes = (document.getElementById("buscaRascunhoInput").value || "").toLowerCase().trim();
+
+  const containerEnviados = document.getElementById("listaEnviadosContainer");
+  const badgeEnviados = document.getElementById("badgeEnviados");
+  const termoEnviados = (document.getElementById("buscaEnviadosInput")?.value || "").toLowerCase().trim();
+
+  const pendentes = rascunhosSalvos.filter(r => !r.enviado);
+  const enviados = rascunhosSalvos.filter(r => r.enviado);
+
+  badgePendentes.innerText = pendentes.length;
+  if (badgeEnviados) badgeEnviados.innerText = enviados.length;
+
+  const filtrarLista = (lista, termo) => lista.filter(r =>
+    r.paciente.toLowerCase().includes(termo) ||
+    r.plano.toLowerCase().includes(termo) ||
+    r.cartao.toLowerCase().includes(termo) ||
+    r.observacoes.toLowerCase().includes(termo)
+  );
+
+  containerPendentes.innerHTML = montarHtmlCardsPacientes(
+    filtrarLista(pendentes, termoPendentes),
+    "Nenhum paciente encontrado. Preencha os dados abaixo e clique em <strong>Salvar Rascunho</strong>."
+  );
+
+  if (containerEnviados) {
+    containerEnviados.innerHTML = montarHtmlCardsPacientes(
+      filtrarLista(enviados, termoEnviados),
+      "Nenhum paciente já enviado encontrado."
+    );
+  }
+}
+
+async function salvarPacienteNoFirebase(origemAutoCheck = false) {
   const btn = document.getElementById("btnSalvarRascunho");
   const textoBtn = document.getElementById("textoBtnSalvarRascunho");
   const statusEl = document.getElementById("statusRascunhoSalvo");
@@ -356,13 +372,28 @@ document.getElementById("btnSalvarRascunho").addEventListener("click", async () 
   const multiplo = document.getElementById("multiploInput").value.trim();
   const valorUs = document.getElementById("valorUsInput").value.trim();
   const observacoes = document.getElementById("observacoesInput").value.trim();
+  document.getElementById("checkGanhoFixo350").checked = false;
+  document.getElementById("checkPdfEnviadoCirurgiao").checked = false;
+  document.getElementById("blocoCheckEnviado").classList.remove("concluido");
+  document.getElementById("statusCheckEnviado").innerText = "";
+  document.getElementById("checkGanhoFixo350").checked = Boolean(p.ganho_fixo_350 ?? item.ganho_fixo_350 ?? false);
+  const enviadoSalvo = Boolean(p.enviado ?? item.enviado ?? false);
+  document.getElementById("checkPdfEnviadoCirurgiao").checked = enviadoSalvo;
+  document.getElementById("blocoCheckEnviado").classList.toggle("concluido", enviadoSalvo);
+  document.getElementById("statusCheckEnviado").innerText = enviadoSalvo ? "✓ Já enviado ao cirurgião" : "";
+  const enviado = document.getElementById("checkPdfEnviadoCirurgiao")?.checked || false;
+  const ganhoFixo350 = document.getElementById("checkGanhoFixo350")?.checked || false;
 
   if (!paciente && !plano && procedimentosSelecionados.length === 0 && !observacoes) {
-    alert("Preencha pelo menos o nome do paciente, uma observação ou selecione um plano antes de salvar.");
+    if (!origemAutoCheck) {
+      alert("Preencha pelo menos o nome do paciente, uma observação ou selecione um plano antes de salvar.");
+    }
     return;
   }
 
   const { porcentagem } = atualizarBarraProgressoAtual();
+  const totalGeral = ultimoCalculoCache ? ultimoCalculoCache.totalGeral : 0;
+  const meusGanhos = calcularMeusGanhos(totalGeral);
 
   const payloadCompleto = {
     plano,
@@ -371,6 +402,9 @@ document.getElementById("btnSalvarRascunho").addEventListener("click", async () 
     multiplo,
     valorUs,
     observacoes,
+    enviado,
+    ganho_fixo_350: ganhoFixo350,
+    meus_ganhos: meusGanhos,
     equipe: equipeSelecionada,
     procedimentos: procedimentosSelecionados,
     uidPrincipalManual,
@@ -383,7 +417,10 @@ document.getElementById("btnSalvarRascunho").addEventListener("click", async () 
     cartao,
     observacoes,
     porcentagem,
-    total_geral: ultimoCalculoCache ? ultimoCalculoCache.totalGeral : 0,
+    total_geral: totalGeral,
+    ganho_fixo_350: ganhoFixo350,
+    meus_ganhos: meusGanhos,
+    enviado,
     atualizado_em: new Date().toISOString(),
     dados_json: JSON.stringify(payloadCompleto)
   };
@@ -395,134 +432,50 @@ document.getElementById("btnSalvarRascunho").addEventListener("click", async () 
   try {
     if (rascunhoAtualId) {
       await updateDoc(doc(db, "reembolsos", rascunhoAtualId), registroFirestore);
-      statusEl.innerText = `✓ Relatório de "${registroFirestore.paciente}" atualizado (${porcentagem}% preenchido).`;
+      statusEl.innerText = enviado
+        ? `✓ "${registroFirestore.paciente}" movido para Pacientes já enviados.`
+        : `✓ Paciente "${registroFirestore.paciente}" atualizado (${porcentagem}% preenchido).`;
     } else {
       const docRef = await addDoc(collection(db, "reembolsos"), registroFirestore);
       rascunhoAtualId = docRef.id;
       document.getElementById("tagEditandoRascunho").classList.remove("hidden");
-      textoBtn.innerText = "Atualizar Rascunho";
-      statusEl.innerText = `✓ Novo rascunho salvo para "${registroFirestore.paciente}" (${porcentagem}% preenchido).`;
+      statusEl.innerText = enviado
+        ? `✓ "${registroFirestore.paciente}" salvo em Pacientes já enviados.`
+        : `✓ Paciente "${registroFirestore.paciente}" salvo (${porcentagem}% preenchido).`;
     }
 
     await carregarRascunhosSalvos();
   } catch (e) {
-    console.error("Erro ao salvar rascunho:", e);
-    alert("Erro ao salvar relatório no Firebase: " + e.message);
+    console.error("Erro ao salvar paciente:", e);
+    alert("Erro ao salvar paciente no Firebase: " + e.message);
   } finally {
     btn.disabled = false;
     textoBtn.innerText = rascunhoAtualId ? "Atualizar Rascunho" : "Salvar Rascunho";
   }
-});
-
-window.carregarRascunhoNoFormulario = (id) => {
-  const item = rascunhosSalvos.find(r => r.id === id);
-  if (!item) return;
-
-  const p = item.payload || {};
-  rascunhoAtualId = item.id;
-
-  document.getElementById("tagEditandoRascunho").classList.remove("hidden");
-  document.getElementById("textoBtnSalvarRascunho").innerText = "Atualizar Rascunho";
-  document.getElementById("statusRascunhoSalvo").innerText = `Editando relatório salvo de "${item.paciente}".`;
-
-  const selectPlano = document.getElementById("planoSelect");
-  selectPlano.value = p.plano || "";
-
-  if (selectPlano.value) {
-    procedimentosDoPlano = todosProcedimentos
-      .filter(proc => proc.plano === selectPlano.value)
-      .sort((a, b) => a.nome.localeCompare(b.nome));
-    document.getElementById("cardDisponiveis").classList.remove("hidden");
-    renderizarDisponiveis();
-  } else {
-    procedimentosDoPlano = [];
-    document.getElementById("cardDisponiveis").classList.add("hidden");
-  }
-
-  document.getElementById("pacienteInput").value = p.paciente || "";
-  document.getElementById("cartaoInput").value = p.cartao || "";
-  document.getElementById("multiploInput").value = p.multiplo || "1";
-  document.getElementById("valorUsInput").value = p.valorUs || "";
-  document.getElementById("observacoesInput").value = p.observacoes ?? item.observacoes ?? "";
-
-  equipeSelecionada = {
-    cirurgiao: p.equipe?.cirurgiao || null,
-    aux1: p.equipe?.aux1 || null,
-    aux2: p.equipe?.aux2 || null,
-    instrumentador: p.equipe?.instrumentador || null
-  };
-  editandoSlot = {
-    cirurgiao: false,
-    aux1: false,
-    aux2: false,
-    instrumentador: false
-  };
-
-  ["cirurgiao", "aux1", "aux2", "instrumentador"].forEach((slot) => {
-    const pessoa = equipeSelecionada[slot];
-    document.getElementById(`busca_${slot}`).value = pessoa ? pessoa.nome : "";
-    renderizarBoxEdicaoSlot(slot);
-  });
-
-  procedimentosSelecionados = Array.isArray(p.procedimentos) ? p.procedimentos : [];
-  uidPrincipalManual = p.uidPrincipalManual ?? null;
-  percentuaisCustomizados = p.percentuaisCustomizados || {};
-
-  atualizarTudo();
-  renderizarListaRascunhos();
-  window.scrollTo({ top: document.getElementById("planoSelect").offsetTop - 90, behavior: "smooth" });
-};
-
-window.excluirRascunho = async (id) => {
-  const item = rascunhosSalvos.find(r => r.id === id);
-  if (!item) return;
-  if (!confirm(`Deseja excluir o relatório salvo de "${item.paciente}"?`)) return;
-
-  try {
-    await deleteDoc(doc(db, "reembolsos", id));
-    if (rascunhoAtualId === id) {
-      limparFormularioParaNovo();
-    }
-    await carregarRascunhosSalvos();
-  } catch (e) {
-    console.error("Erro ao excluir rascunho:", e);
-    alert("Erro ao excluir: " + e.message);
-  }
-};
-
-function limparFormularioParaNovo() {
-  rascunhoAtualId = null;
-  document.getElementById("tagEditandoRascunho").classList.add("hidden");
-  document.getElementById("textoBtnSalvarRascunho").innerText = "Salvar Rascunho";
-  document.getElementById("statusRascunhoSalvo").innerText = "";
-
-  document.getElementById("planoSelect").value = "";
-  document.getElementById("pacienteInput").value = "";
-  document.getElementById("cartaoInput").value = "";
-  document.getElementById("multiploInput").value = "1";
-  document.getElementById("valorUsInput").value = "";
-  document.getElementById("observacoesInput").value = "";
-
-  equipeSelecionada = { cirurgiao: null, aux1: null, aux2: null, instrumentador: null };
-  editandoSlot = { cirurgiao: false, aux1: false, aux2: false, instrumentador: false };
-  ["cirurgiao", "aux1", "aux2", "instrumentador"].forEach((slot) => {
-    document.getElementById(`busca_${slot}`).value = "";
-    document.getElementById(`edit_${slot}`).innerHTML = "";
-  });
-
-  procedimentosDoPlano = [];
-  procedimentosSelecionados = [];
-  uidPrincipalManual = null;
-  percentuaisCustomizados = {};
-  document.getElementById("cardDisponiveis").classList.add("hidden");
-
-  atualizarTudo();
-  renderizarListaRascunhos();
 }
 
-document.getElementById("btnNovoRelatorio").addEventListener("click", limparFormularioParaNovo);
-document.getElementById("btnAtualizarRascunhos").addEventListener("click", carregarRascunhosSalvos);
-document.getElementById("buscaRascunhoInput").addEventListener("input", renderizarListaRascunhos);
+document.getElementById("btnSalvarRascunho").addEventListener("click", () => {
+  salvarPacienteNoFirebase(false);
+});
+
+document.getElementById("checkPdfEnviadoCirurgiao").addEventListener("change", async (e) => {
+  const marcado = e.target.checked;
+  const bloco = document.getElementById("blocoCheckEnviado");
+  const statusCheck = document.getElementById("statusCheckEnviado");
+
+  if (bloco) bloco.classList.toggle("concluido", marcado);
+  if (statusCheck) {
+    statusCheck.innerText = marcado ? "Salvando e movendo..." : "Retornando para Pacientes...";
+  }
+
+  await salvarPacienteNoFirebase(true);
+
+  if (statusCheck) {
+    statusCheck.innerText = marcado ? "✓ Enviado!" : "Movido para Pacientes.";
+  }
+});
+
+document.getElementById("buscaEnviadosInput").addEventListener("input", renderizarListaRascunhos);
 
 // ==================== CARREGAMENTO INICIAL ====================
 
@@ -1368,10 +1321,21 @@ function renderizarAlertas(linhasCalculadas, valorUs, multiplo, paciente) {
 }
 
 function atualizarTudo() {
-  atualizarBarraProgressoAtual();
+  const { porcentagem } = atualizarBarraProgressoAtual();
   const idxPrincipal = obterIndicePrincipal();
   renderizarSelecionados(idxPrincipal);
   renderizarTabelasCalculo(idxPrincipal);
+  atualizarPainelMeusGanhos();
+
+  const blocoCheck = document.getElementById("blocoCheckEnviado");
+  const jaEnviado = document.getElementById("checkPdfEnviadoCirurgiao")?.checked;
+  if (blocoCheck) {
+    if (porcentagem === 100 || jaEnviado) {
+      blocoCheck.classList.remove("hidden");
+    } else {
+      blocoCheck.classList.add("hidden");
+    }
+  }
 }
 
 function renderizarSelecionados(idxPrincipal) {

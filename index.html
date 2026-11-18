@@ -15,27 +15,17 @@
 <div class="container no-print">
 
   <!-- Lista de Pacientes (Pendentes / Em andamento) -->
-<div class="card">
-  <h2>
-    <span>Pacientes <span id="badgeRascunhos" class="badge">0</span></span>
-    <button type="button" id="btnAtualizarRascunhos" class="btn-auto" style="background: #475569;">Atualizar Lista</button>
-  </h2>
-  <input type="text" id="buscaRascunhoInput" class="search-box" placeholder="Buscar paciente por nome, plano, cartão ou observação...">
-  <div id="listaRascunhosContainer">
-    <div style="font-size: 0.86rem; color: #64748b;">Carregando pacientes...</div>
+  <div class="card">
+    <h2>
+      <span>Pacientes <span id="badgeRascunhos" class="badge">0</span></span>
+      <button type="button" id="btnAtualizarRascunhos" class="btn-auto" style="background: #475569;">Atualizar Lista</button>
+    </h2>
+    <input type="text" id="buscaRascunhoInput" class="search-box" placeholder="Buscar paciente por nome, plano, cartão ou observação...">
+    <div id="listaRascunhosContainer">
+      <div style="font-size: 0.86rem; color: #64748b;">Carregando pacientes...</div>
+    </div>
   </div>
-</div>
 
-<!-- Lista de Pacientes já enviados -->
-<div class="card">
-  <h2>
-    <span>Pacientes já enviados <span id="badgeEnviados" class="badge" style="background:#dcfce7; color:#166534;">0</span></span>
-  </h2>
-  <input type="text" id="buscaEnviadosInput" class="search-box" placeholder="Buscar paciente já enviado...">
-  <div id="listaEnviadosContainer">
-    <div style="font-size: 0.86rem; color: #64748b;">Nenhum paciente enviado ainda.</div>
-  </div>
-</div>
   <!-- Dados Principais do Reembolso -->
   <div class="card">
     <h1>
@@ -178,15 +168,27 @@
     </div>
   </div>
 
+  <!-- Card Separado: Meus Ganhos (Independente e fora de qualquer planilha) -->
+  <div class="card">
+    <h2>Meus Ganhos</h2>
+    <div class="ganhos-card-body">
+      <div id="valorMeusGanhosTexto" class="ganhos-valor-destaque">R$ 350,00</div>
+      <label class="ganhos-check-label" for="checkGanhoFixo350">
+        <input type="checkbox" id="checkGanhoFixo350">
+        <span>Valor fixo de R$ 350,00</span>
+      </label>
+    </div>
+  </div>
+
   <!-- Lista de Procedimentos Disponíveis no Plano Selecionado -->
   <div id="cardDisponiveis" class="card hidden">
-  <h2>
-    <span>Procedimentos Disponíveis <span id="badgeDisponiveis" class="badge">0</span></span>
-    <button type="button" class="btn-novo-proc-header" onclick="abrirModalProcedimento()">+ Novo Procedimento</button>
-  </h2>
-  <input type="text" id="buscaProcInput" class="search-box" placeholder="Buscar por código ou nome do procedimento...">
-  <div id="listaDisponiveis" class="proc-list"></div>
-</div>
+    <h2>
+      <span>Procedimentos Disponíveis <span id="badgeDisponiveis" class="badge">0</span></span>
+      <button type="button" class="btn-novo-proc-header" onclick="abrirModalProcedimento()">+ Novo Procedimento</button>
+    </h2>
+    <input type="text" id="buscaProcInput" class="search-box" placeholder="Buscar por código ou nome do procedimento...">
+    <div id="listaDisponiveis" class="proc-list"></div>
+  </div>
 
   <!-- Procedimentos Adicionados (Controle de Vezes, Auxiliares e Principal) -->
   <div class="card hidden" id="cardSelecionados">
@@ -302,15 +304,6 @@
       </button>
     </div>
 
-    <!-- Check de PDF Enviado para Cirurgião (Aparece quando 100% preenchido) -->
-  <div id="blocoCheckEnviado" class="enviado-box hidden">
-    <label class="enviado-check-label" for="checkPdfEnviadoCirurgiao">
-      <input type="checkbox" id="checkPdfEnviadoCirurgiao">
-      <span>✓ PDF do paciente enviado para cirurgião</span>
-    </label>
-    <span id="statusCheckEnviado" style="font-size: 0.8rem; color: #475569;"></span>
-  </div>
-
     <div class="checklist-box">
       <strong>Checklist Preventivo Bradesco Saúde (Antes de Protocolar):</strong>
       <ul class="alert-list" style="margin-top: 6px;">
@@ -318,6 +311,26 @@
         <li>Para recibos de Pessoa Física, utilize obrigatoriamente o <strong>Receita Saúde</strong> (IN RFB nº 2.240/2024).</li>
         <li>Anexe <strong>Relatório Médico/Odontológico</strong>, <strong>Boletim Operatório</strong> comprovando todos os códigos e <strong>Laudo Anatomopatológico</strong> (quando houver).</li>
       </ul>
+    </div>
+  </div>
+
+  <!-- Check de PDF Enviado para Cirurgião (Aparece quando 100% preenchido) -->
+  <div id="blocoCheckEnviado" class="card enviado-box hidden" style="margin-top: 0;">
+    <label class="enviado-check-label" for="checkPdfEnviadoCirurgiao">
+      <input type="checkbox" id="checkPdfEnviadoCirurgiao">
+      <span>✓ PDF do paciente enviado para cirurgião</span>
+    </label>
+    <span id="statusCheckEnviado" style="font-size: 0.8rem; color: #475569;"></span>
+  </div>
+
+  <!-- Lista de Pacientes já enviados (Último card da página) -->
+  <div class="card">
+    <h2>
+      <span>Pacientes já enviados <span id="badgeEnviados" class="badge" style="background:#dcfce7; color:#166534;">0</span></span>
+    </h2>
+    <input type="text" id="buscaEnviadosInput" class="search-box" placeholder="Buscar paciente já enviado...">
+    <div id="listaEnviadosContainer">
+      <div style="font-size: 0.86rem; color: #64748b;">Nenhum paciente enviado ainda.</div>
     </div>
   </div>
 

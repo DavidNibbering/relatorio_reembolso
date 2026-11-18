@@ -1076,6 +1076,76 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
   }
 }
 
+/* Botões de Adicionar / Editar Procedimento */
+.proc-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.btn-edit-proc {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  height: 38px;
+  padding: 0 11px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.btn-edit-proc:hover {
+  background: #dbeafe;
+}
+.btn-novo-proc-header {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 32px;
+}
+.btn-novo-proc-header:hover {
+  background: #1d4ed8;
+}
+.btn-excluir-modal {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-right: auto;
+  min-height: 42px;
+}
+.btn-excluir-modal:hover {
+  background: #fecaca;
+}
+
+@media (max-width: 768px) {
+  .btn-edit-proc {
+    height: 36px;
+    padding: 0 8px;
+    font-size: 0.75rem;
+  }
+  .btn-novo-proc-header {
+    font-size: 0.75rem;
+    padding: 5px 9px;
+  }
+}
+
 /* ================= ESTILOS DO DOCUMENTO PDF (IMPRESSÃO E HTML2PDF) ================= */
 #printDocument {
   display: none;

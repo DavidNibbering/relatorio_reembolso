@@ -169,14 +169,14 @@
   </div>
 
   <!-- Lista de Procedimentos Disponíveis no Plano Selecionado -->
-  <div class="card hidden" id="cardDisponiveis">
-    <h2>
-      <span>Procedimentos Disponíveis</span>
-      <span class="badge" id="badgeDisponiveis">0</span>
-    </h2>
-    <input type="text" id="buscaProcInput" class="search-box" placeholder="Filtrar procedimento por código ou nome...">
-    <div class="proc-list" id="listaDisponiveis"></div>
-  </div>
+  <div id="cardDisponiveis" class="card hidden">
+  <h2>
+    <span>Procedimentos Disponíveis <span id="badgeDisponiveis" class="badge">0</span></span>
+    <button type="button" class="btn-novo-proc-header" onclick="abrirModalProcedimento()">+ Novo Procedimento</button>
+  </h2>
+  <input type="text" id="buscaProcInput" class="search-box" placeholder="Buscar por código ou nome do procedimento...">
+  <div id="listaDisponiveis" class="proc-list"></div>
+</div>
 
   <!-- Procedimentos Adicionados (Controle de Vezes, Auxiliares e Principal) -->
   <div class="card hidden" id="cardSelecionados">
@@ -350,6 +350,51 @@
     </div>
   </div>
 </div>
+
+<!-- Modal de Adicionar / Editar Procedimento -->
+<div id="modalProcedimento" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h3 id="tituloModalProcedimento">Novo Procedimento</h3>
+    <input type="hidden" id="procEditId">
+
+    <div class="form-group">
+      <label for="procPlanoInput">Plano de Saúde *</label>
+      <input type="text" id="procPlanoInput" list="listaPlanosDatalist" placeholder="Ex: BRADESCO SAÚDE">
+      <datalist id="listaPlanosDatalist"></datalist>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label for="procCodigoInput">Código TUSS *</label>
+        <input type="text" id="procCodigoInput" placeholder="Ex: 30713137">
+      </div>
+      <div class="form-group">
+        <label for="procQtdUsInput">QTD US / URS / CRS *</label>
+        <input type="text" inputmode="decimal" id="procQtdUsInput" placeholder="Ex: 120,50">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="procNomeInput">Nome / Descrição do Procedimento *</label>
+      <input type="text" id="procNomeInput" placeholder="Ex: ARTROSCOPIA DE JOELHO...">
+    </div>
+
+    <div class="form-group">
+      <label for="procAuxInput">Quantidade de Auxiliares (TUSS)</label>
+      <select id="procAuxInput">
+        <option value="0">0 Auxiliares</option>
+        <option value="1">1 Auxiliar (30%)</option>
+        <option value="2">2 Auxiliares (30% + 20%)</option>
+      </select>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" id="btnExcluirProcedimento" class="btn-excluir-modal hidden" onclick="excluirProcedimentoModal()">Excluir</button>
+      <button type="button" class="btn-cancelar" onclick="fecharModalProcedimento()">Cancelar</button>
+      <button type="button" id="btnSalvarProcedimento" class="btn-salvar-modal" onclick="salvarProcedimentoModal()">Salvar Procedimento</button>
+    </div>
+  </div>
+</div>  
 
 <script type="module" src="app.js"></script>
 </body>

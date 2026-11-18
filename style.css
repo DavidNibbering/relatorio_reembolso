@@ -533,8 +533,13 @@ button { touch-action: manipulation; }
 }
 .checklist-box strong { color: #0f172a; }
 
-/* Tabelas (Desktop & iPad) */
-.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* Tabelas (Desktop, iPad e Celular com rolagem horizontal) */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; margin-top: 6px; }
 th, td { text-align: left; padding: 9px 8px; border: 1px solid #e2e8f0; vertical-align: middle; }
 th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; text-transform: uppercase; }
@@ -718,112 +723,276 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
   .rascunhos-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* ================= RESPONSIVIDADE PARA CELULAR (MOBILE) ================= */
+/* ================= RESPONSIVIDADE COMPACTA PARA CELULAR ================= */
 @media (max-width: 768px) {
   body {
-    padding: 10px 8px 28px 8px;
+    padding: 8px 6px 24px 6px;
   }
 
   .card {
-    padding: 14px 12px;
-    border-radius: 10px;
-    margin-bottom: 14px;
+    padding: 12px 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
   }
 
   h1 {
-    font-size: 1.2rem;
-    padding-bottom: 10px;
-    margin-bottom: 12px;
+    font-size: 1.12rem;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
   }
 
   h2 {
-    font-size: 1rem;
-    margin-bottom: 12px;
+    font-size: 0.96rem;
+    margin-bottom: 10px;
   }
 
-  /* Evita zoom automático no Safari iOS ao tocar em campos */
-  input, select, textarea,
-  .edit-person-box input, .edit-person-box select,
-  .input-vezes, .input-pct, .select-aux {
+  .form-group {
+    margin-bottom: 10px;
+  }
+
+  label {
+    font-size: 0.78rem;
+    margin-bottom: 3px;
+  }
+
+  /* Evita zoom no iPhone sem deixar os campos gigantes */
+  input, select, textarea {
     font-size: 16px !important;
-    min-height: 44px;
+    padding: 7px 10px;
+    min-height: 38px;
   }
 
+  textarea {
+    min-height: 56px;
+  }
+
+  /* Campos do formulário agrupados em 2 colunas para não esticar a página */
   .row {
-    flex-direction: column;
-    gap: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
 
   .row .form-group {
-    min-width: 100%;
+    min-width: 0;
     width: 100%;
+    margin-bottom: 8px;
   }
 
-  /* Barra de progresso e botões de rascunho empilhados */
+  /* Plano e Nome do Paciente ocupam a linha inteira para caber nomes longos */
+  .row .form-group:has(#planoSelect),
+  .row .form-group:has(#pacienteInput) {
+    grid-column: 1 / -1;
+  }
+
+  /* Barra de progresso compacta */
   .progresso-painel {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 12px;
-    gap: 12px;
+    padding: 10px;
+    gap: 8px;
+    margin-bottom: 12px;
   }
 
   .progresso-info {
     min-width: 100%;
   }
 
+  .progresso-faltando {
+    font-size: 0.72rem;
+  }
+
   .acoes-rascunho {
     width: 100%;
     display: grid;
     grid-template-columns: 1fr 2fr;
-    gap: 8px;
+    gap: 6px;
   }
 
   .btn-novo-relatorio,
   .btn-salvar-rascunho {
     width: 100%;
-    min-height: 44px;
-    font-size: 0.9rem;
+    min-height: 38px;
+    padding: 7px 10px;
+    font-size: 0.84rem;
   }
 
-  /* Rascunhos salvos e Equipe Cirúrgica em 1 coluna */
+  /* Rascunhos Salvos: carrossel horizontal compacto (não ocupa altura vertical!) */
   .rascunhos-grid {
-    grid-template-columns: 1fr;
-    max-height: 380px;
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-height: none;
+    gap: 10px;
+    padding-bottom: 6px;
+    scroll-snap-type: x mandatory;
   }
 
+  .rascunho-card {
+    flex: 0 0 250px;
+    scroll-snap-align: start;
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .rascunho-nome {
+    font-size: 0.86rem;
+  }
+
+  /* Equipe Cirúrgica em grade 2x2 compacta (metade da altura) */
   .equipe-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
 
   .equipe-slot {
-    padding: 12px;
+    padding: 8px;
+  }
+
+  .slot-header {
+    margin-bottom: 4px;
+  }
+
+  .slot-header label {
+    font-size: 0.76rem;
   }
 
   .btn-cad-mini {
-    min-height: 36px;
-    padding: 6px 12px;
-    font-size: 0.82rem;
+    min-height: 24px;
+    padding: 2px 7px;
+    font-size: 0.7rem;
   }
 
-  .dropdown-item {
-    padding: 12px;
+  .edit-person-box {
+    margin-top: 6px;
+    padding: 6px;
+    gap: 5px;
   }
+
+  .edit-person-box input,
+  .edit-person-box select {
+    padding: 4px 6px;
+    min-height: 32px;
+  }
+
+  .edit-actions {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .btn-save-edit,
+  .btn-clear-slot {
+    width: 100%;
+    min-height: 28px;
+    font-size: 0.72rem;
+    padding: 4px 6px;
+  }
+
+  /* Lista de procedimentos disponíveis mais enxuta */
+  .proc-list {
+    max-height: 210px;
+  }
+
+  .proc-item {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .proc-code { font-size: 0.78rem; }
+  .proc-name { font-size: 0.82rem; }
+  .proc-meta { font-size: 0.72rem; }
 
   .btn-add {
-    width: 44px;
-    height: 44px;
-    font-size: 1.45rem;
+    width: 36px;
+    height: 36px;
+    font-size: 1.25rem;
   }
 
-  /* Botões principais em largura total no celular */
-  .btn-whatsapp,
-  .btn-whatsapp-pdf,
-  .btn-pdf-export {
-    width: 100%;
-    min-height: 48px;
-    font-size: 0.95rem;
-    padding: 12px 16px;
+  /* ===== TABELAS REAIS PRESERVADAS COM COLUNA FIXA À ESQUERDA ===== */
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+  }
+
+  .table-wrap table {
+    margin-top: 0;
+    font-size: 0.78rem;
+  }
+
+  .table-wrap th,
+  .table-wrap td {
+    padding: 6px 7px;
+  }
+
+  .table-wrap th {
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+
+  /* Mantém largura legível e permite deslizar horizontalmente como planilha */
+  #cardSelecionados table { min-width: 620px; }
+  #tabelaSolicitados { min-width: 720px; }
+  #tabelaResultados { min-width: 740px; }
+
+  /* Congela a 1ª coluna (Código / Prioridade) à esquerda ao arrastar para o lado */
+  #cardSelecionados th:first-child,
+  #cardSelecionados td:first-child,
+  #tabelaSolicitados th:first-child,
+  #tabelaSolicitados td:first-child,
+  #tabelaResultados th:first-child,
+  #tabelaResultados td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background-color: #ffffff;
+    box-shadow: 2px 0 4px rgba(15, 23, 42, 0.06);
+  }
+
+  #cardSelecionados th:first-child,
+  #tabelaSolicitados th:first-child,
+  #tabelaResultados th:first-child {
+    background-color: #f1f5f9;
+    z-index: 3;
+  }
+
+  #tabelaResultados tr.row-total td:first-child {
+    background-color: #f8fafc;
+  }
+
+  #tabelaResultados tr.row-total-geral td:first-child {
+    background-color: #eff6ff;
+  }
+
+  /* Limita largura da descrição na tabela para caberem mais colunas na tela */
+  #cardSelecionados td:nth-child(3),
+  #tabelaSolicitados td:nth-child(2),
+  #tabelaResultados td:nth-child(2) {
+    min-width: 150px;
+    max-width: 190px;
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  .input-vezes,
+  .select-aux {
+    width: 54px;
+    min-height: 32px;
+    padding: 3px 4px;
+  }
+
+  .input-pct {
+    width: 56px;
+    min-height: 32px;
+    padding: 3px 4px;
+  }
+
+  .btn-princ,
+  .btn-rem {
+    min-height: 30px;
+    padding: 4px 8px;
+    font-size: 0.72rem;
   }
 
   .capture-area {
@@ -831,164 +1000,17 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
   }
 
   .capture-header {
-    flex-direction: column;
+    font-size: 0.78rem;
     gap: 4px;
   }
 
-  .capture-header > div:last-child {
-    text-align: left !important;
-  }
-
-  /* ===== TABELAS TRANSFORMADAS EM CARDS NO CELULAR ===== */
-  .table-wrap {
-    overflow-x: visible;
-  }
-
-  #cardSelecionados table,
-  #cardCalculo table {
-    border: none;
-  }
-
-  #cardSelecionados thead,
-  #cardCalculo thead {
-    display: none;
-  }
-
-  #cardSelecionados tbody,
-  #cardCalculo tbody {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  #cardSelecionados tbody tr,
-  #cardCalculo tbody tr {
-    display: block;
-    background: #ffffff;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    padding: 8px 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  }
-
-  #cardSelecionados tbody td,
-  #cardCalculo tbody td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 0;
-    border: none;
-    border-bottom: 1px solid #f1f5f9;
-    text-align: right !important;
-    white-space: normal;
-    font-size: 0.9rem;
-  }
-
-  #cardSelecionados tbody td:last-child,
-  #cardCalculo tbody td:last-child {
-    border-bottom: none;
-  }
-
-  #cardSelecionados tbody td::before,
-  #cardCalculo tbody td::before {
-    font-weight: 700;
-    font-size: 0.75rem;
-    color: #64748b;
-    text-transform: uppercase;
-    text-align: left;
-    flex-shrink: 0;
-  }
-
-  /* Rótulos da Tabela de Procedimentos Adicionados */
-  #tabelaSelecionados td:nth-child(1)::before { content: "Prioridade"; }
-  #tabelaSelecionados td:nth-child(2)::before { content: "Código"; }
-  #tabelaSelecionados td:nth-child(3)::before { content: "Procedimento"; }
-  #tabelaSelecionados td:nth-child(4)::before { content: "Vezes"; }
-  #tabelaSelecionados td:nth-child(5)::before { content: "QTD US/CRS"; }
-  #tabelaSelecionados td:nth-child(6)::before { content: "Auxiliares"; }
-  #tabelaSelecionados td:nth-child(7)::before { content: "Ação"; }
-
-  .input-vezes,
-  .select-aux {
-    width: 96px;
-  }
-
-  .btn-princ,
-  .btn-rem {
-    min-height: 38px;
-    padding: 8px 12px;
-    font-size: 0.84rem;
-  }
-
-  /* Rótulos da Tabela 1 (Procedimentos Solicitados) */
-  #tabelaSolicitados td:nth-child(1)::before { content: "Código"; }
-  #tabelaSolicitados td:nth-child(2)::before { content: "Descrição"; }
-  #tabelaSolicitados td:nth-child(3)::before { content: "QTD COD"; }
-  #tabelaSolicitados td:nth-child(4)::before { content: "QTD AUX"; }
-  #tabelaSolicitados td:nth-child(5)::before { content: "QTD US/CRS"; }
-  #tabelaSolicitados td:nth-child(6)::before { content: "Valor US"; }
-  #tabelaSolicitados td:nth-child(7)::before { content: "Múltiplo"; }
-  #tabelaSolicitados td:nth-child(8)::before { content: "(%) Editável"; }
-
-  #tabelaSolicitados td:nth-child(8) {
-    justify-content: space-between;
-  }
-
-  .input-pct {
-    width: 88px;
-    display: inline-block;
-  }
-
-  /* Rótulos da Tabela 2 (Cálculo Exato do Reembolso) */
-  #tabelaResultados tr:not(.row-total):not(.row-total-geral) td:nth-child(1)::before { content: "Código"; }
-  #tabelaResultados tr:not(.row-total):not(.row-total-geral) td:nth-child(2)::before { content: "Descrição"; }
-  #tabelaResultados tr:not(.row-total):not(.row-total-geral) td:nth-child(3)::before { content: "Valor Base"; }
-  #tabelaResultados tr:not(.row-total):not(.row-total-geral) td:nth-child(4)::before { content: "Cirurgião"; }
-  #tabelaResultados tr:not(.row-total):not(.row-total-geral) td:nth-child(5)::before { content: "1º Auxiliar (30%)"; }
-  #tabelaResultados tr:not(.row-total):not(.row-total-geral) td:nth-child(6)::before { content: "2º Auxiliar (20%)"; }
-  #tabelaResultados tr:not(.row-total):not(.row-total-geral) td:nth-child(7)::before { content: "Instrumentador (10%)"; }
-
-  /* Totais da Tabela 2 no Celular */
-  #tabelaResultados tr.row-total {
-    background: #f8fafc;
-    border: 2px solid #94a3b8;
-  }
-  #tabelaResultados tr.row-total td:nth-child(1) {
-    justify-content: center;
-    font-size: 0.85rem;
-    color: #1e293b;
-  }
-  #tabelaResultados tr.row-total td:nth-child(2)::before { content: "Total Cirurgião"; }
-  #tabelaResultados tr.row-total td:nth-child(3)::before { content: "Total 1º Auxiliar"; }
-  #tabelaResultados tr.row-total td:nth-child(4)::before { content: "Total 2º Auxiliar"; }
-  #tabelaResultados tr.row-total td:nth-child(5)::before { content: "Total Instrumentador"; }
-
-  #tabelaResultados tr.row-total-geral {
-    background: #eff6ff;
-    border: 2px solid #2563eb;
-  }
-  #tabelaResultados tr.row-total-geral td:nth-child(1) {
-    justify-content: center;
-    font-size: 0.82rem;
-    padding-bottom: 4px;
-    border-bottom: 1px solid #bfdbfe;
-  }
-  #tabelaResultados tr.row-total-geral td:nth-child(2) {
-    justify-content: center;
-    font-size: 1.15rem;
-    padding-top: 6px;
-  }
-
-  /* Modal no celular */
-  .modal-card {
-    padding: 18px 14px;
-  }
-  .modal-footer {
-    flex-direction: column-reverse;
-  }
-  .modal-footer button {
+  .btn-whatsapp,
+  .btn-whatsapp-pdf,
+  .btn-pdf-export {
     width: 100%;
+    min-height: 44px;
+    font-size: 0.9rem;
+    padding: 10px 14px;
   }
 }
 
@@ -1071,7 +1093,6 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
   margin-bottom: 0;
 }
 
-/* Bloco que impede quebra de tabela inteira entre páginas */
 .pdf-render-scope .pdf-table-block {
   page-break-inside: avoid !important;
   break-inside: avoid !important;

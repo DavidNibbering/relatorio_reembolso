@@ -955,7 +955,7 @@ function renderizarDisponiveis() {
   badge.innerText = filtrados.length;
 
   if (filtrados.length === 0) {
-    container.innerHTML = `<div style="padding: 14px; color: #64748b; font-size: 0.9rem;">Nenhum procedimento encontrado.</div>`;
+    container.innerHTML = `<div style="padding: 14px; color: #64748b; font-size: 0.9rem;">Nenhum procedimento encontrado. Clique em <strong>+ Novo Procedimento</strong> para cadastrar.</div>`;
     return;
   }
 
@@ -970,10 +970,201 @@ function renderizarDisponiveis() {
           QTD US/URS/CRS: <strong>${formatarNumero(p.qtd_us, 2, 2)}</strong> &bull; Auxiliares: <strong>${p.quant_aux}</strong>
         </div>
       </div>
-      <button type="button" class="btn-add" title="Adicionar ao Reembolso" onclick="adicionarAoReembolso('${p.id}')">+</button>
+      <div class="proc-actions">
+        <button type="button" class="btn-edit-proc" title="Editar Procedimento" onclick="abrirModalProcedimento('${p.id}')">✎ Editar</button>
+        <button type="button" class="btn-add" title="Adicionar ao Reembolso" onclick="adicionarAoReembolso('${p.id}')">+</button>
+      </div>
     </div>
   `).join("");
 }
+
+function atualizarSelectPlanosELista() {
+  const select = document.getElementById("planoSelect");
+  const datalist = document.getElementById("listaPlanosDatalist");
+  const planoAtual = select.value;
+
+  const planosUnicos = Array.from(new Set(todosProcedimentos.map(p => p.plano).filter(Boolean))).sort();
+
+  select.innerHTML = `<option value="">Selecione um plano de saúde...</option>` +
+    planosUnicos.map(plano => `<option value="${escaparHtml(plano)}">${escaparHtml(plano)}</option>`).join("");
+
+  if (planosUnicos.includes(planoAtual)) {
+    select.value = planoAtual;
+  }
+
+  if (datalist) {
+    datalist.innerHTML = planosUnicos
+      .map(plano => `<option value="${escaparHtml(plano)}">`)
+      .join("");
+  }
+}
+
+window.abrirModalProcedimento = (procId = null) => {
+  atualizarSelectPlanosELista();
+
+  const titulo = document.getElementById("tituloModalProcedimento");
+  const btnExcluir = document.getElementById("btnExcluirProcedimento");
+  const inputId = document.getElementById("procEditId");
+  const inputPlano = document.getElementById("procPlanoInput");
+  const inputCodigo = document.getElementById("procCodigoInput");
+  const inputNome = document.getElementById("procNomeInput");
+  const inputQtdUs = document.getElementById("procQtdUsInput");
+  const inputAux = document.getElementById("procAuxInput");
+
+  if (procId) {
+    const proc = todosProcedimentos.find(p => p.id === procId);
+    if (!proc) return;
+
+    titulo.innerText = "Editar Procedimento";
+    inputId.value = proc.id;
+    inputPlano.value = proc.plano;
+    inputCodigo.value = proc.codigo;
+    inputNome.value = proc.nome;
+    inputQtdUs.value = formatarNumero(proc.qtd_us, 2, 2);
+    inputAux.value = String(proc.quant_aux ?? 0);
+    btnExcluir.classList.remove("hidden");
+  } else {
+    titulo.innerText = "Novo Procedimento";
+    inputId.value = "";
+    inputPlano.value = document.getElementById("planoSelect").value || "";
+    inputCodigo.value = "";
+    inputNome.value = "";
+    inputQtdUs.value = "";
+    inputAux.value = "0";
+    btnExcluir.classList.add("hidden");
+  }
+
+  document.getElementById("modalProcedimento").classList.remove("hidden");
+  setTimeout(() => (procId ? inputNome : inputCodigo).focus(), 50);
+};
+
+window.fecharModalProcedimento = () => {
+  document.getElementById("modalProcedimento").classList.add("hidden");
+};
+
+window.salvarProcedimentoModal = async () => {
+  const btn = document.getElementById("btnSalvarProcedimento");
+  const idEdicao = document.getElementById("procEditId").value.trim();
+  const plano = document.getElementById("procPlanoInput").value.trim();
+  const codigo = document.getElementById("procCodigoInput").value.trim();
+  const nome = document.getElementById("procNomeInput").value.trim();
+  const qtdUs = lerDecimal(document.getElementById("procQtdUsInput").value);
+  const quantAux = parseInt(document.getElementById("procAuxInput").value, 10) || 0;
+
+  if (!plano || !codigo || !nome) {
+    alert("Preencha Plano de Saúde, Código TUSS e Nome do Procedimento.");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerText = "Salvando...";
+
+  const dadosFirestore = {
+    plano,
+    codigo,
+    nome,
+    qtd_us: qtdUs,
+    quant_aux: quantAux
+  };
+
+  try {
+    if (idEdicao) {
+      await updateDoc(doc(db, "procedimentos", idEdicao), dadosFirestore);
+
+      const idx = todosProcedimentos.findIndex(p => p.id === idEdicao);
+      if (idx !== -1) {
+        todosProcedimentos[idx] = {
+          ...todosProcedimentos[idx],
+          ...dadosFirestore,
+          quant_aux_original: quantAux
+        };
+      }
+
+      // Atualiza também se já estiver adicionado na tabela de cálculo atual
+      procedimentosSelecionados.forEach((sel) => {
+        if (sel.id === idEdicao) {
+          sel.plano = plano;
+          sel.codigo = codigo;
+          sel.nome = nome;
+          sel.qtd_us = qtdUs;
+          sel.quant_aux = quantAux;
+          sel.quant_aux_original = quantAux;
+        }
+      });
+    } else {
+      const docRef = await addDoc(collection(db, "procedimentos"), dadosFirestore);
+      todosProcedimentos.push({
+        id: docRef.id,
+        ...dadosFirestore,
+        quant_aux_original: quantAux
+      });
+    }
+
+    atualizarSelectPlanosELista();
+
+    const selectPlano = document.getElementById("planoSelect");
+    if (!selectPlano.value) {
+      selectPlano.value = plano;
+    }
+
+    if (selectPlano.value) {
+      procedimentosDoPlano = todosProcedimentos
+        .filter(p => p.plano === selectPlano.value)
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+      document.getElementById("cardDisponiveis").classList.remove("hidden");
+      renderizarDisponiveis();
+    }
+
+    atualizarTudo();
+    fecharModalProcedimento();
+  } catch (e) {
+    console.error("Erro ao salvar procedimento:", e);
+    alert("Erro ao salvar procedimento no Firebase: " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerText = "Salvar Procedimento";
+  }
+};
+
+window.excluirProcedimentoModal = async () => {
+  const idEdicao = document.getElementById("procEditId").value.trim();
+  if (!idEdicao) return;
+
+  const proc = todosProcedimentos.find(p => p.id === idEdicao);
+  if (!confirm(`Deseja excluir permanentemente o procedimento "${proc?.codigo} - ${proc?.nome}" do banco de dados?`)) {
+    return;
+  }
+
+  const btn = document.getElementById("btnExcluirProcedimento");
+  btn.disabled = true;
+  btn.innerText = "Excluindo...";
+
+  try {
+    await deleteDoc(doc(db, "procedimentos", idEdicao));
+    todosProcedimentos = todosProcedimentos.filter(p => p.id !== idEdicao);
+    procedimentosSelecionados = procedimentosSelecionados.filter(p => p.id !== idEdicao);
+
+    atualizarSelectPlanosELista();
+    const planoAtual = document.getElementById("planoSelect").value;
+    if (planoAtual) {
+      procedimentosDoPlano = todosProcedimentos
+        .filter(p => p.plano === planoAtual)
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+      renderizarDisponiveis();
+    } else {
+      document.getElementById("cardDisponiveis").classList.add("hidden");
+    }
+
+    atualizarTudo();
+    fecharModalProcedimento();
+  } catch (e) {
+    console.error("Erro ao excluir procedimento:", e);
+    alert("Erro ao excluir procedimento: " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerText = "Excluir";
+  }
+};
 
 window.adicionarAoReembolso = (id) => {
   const item = procedimentosDoPlano.find(p => p.id === id);

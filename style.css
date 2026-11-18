@@ -1146,6 +1146,89 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
   }
 }
 
+/* Card Separado: Meus Ganhos */
+.ganhos-card-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.ganhos-valor-destaque {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #15803d;
+}
+.ganhos-check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  padding: 9px 14px;
+  border-radius: 6px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #0f172a;
+  cursor: pointer;
+  margin-bottom: 0;
+}
+.ganhos-check-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Check de PDF Enviado para Cirurgião (Final da Página) */
+.enviado-box {
+  background: #eff6ff;
+  border: 2px solid #93c5fd;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.enviado-box.concluido {
+  background: #dcfce7;
+  border-color: #22c55e;
+}
+.enviado-check-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  cursor: pointer;
+  margin-bottom: 0;
+}
+.enviado-box.concluido .enviado-check-label {
+  color: #166534;
+}
+.enviado-check-label input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  margin: 0;
+  cursor: pointer;
+}
+.tag-enviado-card {
+  display: inline-block;
+  background: #16a34a;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  margin-left: 6px;
+}
+
 /* ================= ESTILOS DO DOCUMENTO PDF (IMPRESSÃO E HTML2PDF) ================= */
 #printDocument {
   display: none;

@@ -1545,7 +1545,7 @@ function gerarBlobPdfVetorial(calc) {
       ],
       [
         { content: `PLANO:\n${calc.plano.toUpperCase()}`, styles: { fontStyle: "bold" } },
-        { content: `MÚLTIPLO / VALOR US/URS/CRS:\n${formatarNumero(calc.multiploReal, 0, 4)}  /  ${formatarNumero(calc.valorUsReal, 2, 6)}`, styles: { fontStyle: "bold" } }
+        { content: `MÚLTIPLO / VALOR US/URS/CRS:\n${formatarNumero(calc.multiploReal, 0, 4)} / ${formatarNumero(calc.valorUsReal, 2, 6)}`, styles: { fontStyle: "bold" } }
       ]
     ],
     columnStyles: { 0: { cellWidth: 108 }, 1: { cellWidth: 74 } }
@@ -1608,7 +1608,7 @@ function gerarBlobPdfVetorial(calc) {
   docPdf.setFont("helvetica", "normal");
   docPdf.setFontSize(7.5);
   docPdf.setTextColor(51, 65, 85);
-  const glossario = "• Valor US/URS/CRS: unidade expressa em moeda corrente conforme o plano contratado.  • Quantidade de US/URS/CRS: prevista na tabela de reembolso para cada procedimento.  • Múltiplo de reembolso: fator multiplicador do plano.  • Valores limites de reembolso: resultado da multiplicação do valor US/URS/CRS, quantidade e múltiplo.";
+  const glossario = "- Valor US/URS/CRS: unidade expressa em moeda corrente conforme o plano contratado. - Quantidade de US/URS/CRS: prevista na tabela de reembolso para cada procedimento. - Múltiplo de reembolso: fator multiplicador do plano. - Valores limites de reembolso: resultado da multiplicação do valor US/URS/CRS, quantidade e múltiplo.";
   const linhasGloss = docPdf.splitTextToSize(glossario, larguraUtil);
   docPdf.text(linhasGloss, margem, y);
   y += linhasGloss.length * 3.4 + 5;

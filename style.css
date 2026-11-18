@@ -313,6 +313,56 @@ button { touch-action: manipulation; }
 .dropdown-item span { font-size: 0.78rem; color: #64748b; }
 .dropdown-empty { padding: 10px 12px; font-size: 0.82rem; color: #64748b; }
 
+/* Resumo compacto da pessoa selecionada na equipe */
+.person-summary-box {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.person-summary-box.incompleto {
+  border-color: #fca5a5;
+  background: #fffafa;
+}
+.summary-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: #334155;
+}
+.summary-line strong {
+  color: #0f172a;
+}
+.summary-missing {
+  margin-top: 5px;
+  padding-top: 4px;
+  border-top: 1px dashed #fecaca;
+  color: #dc2626;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+.summary-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 7px;
+}
+.btn-edit-slot {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex: 1;
+  min-height: 30px;
+}
+.btn-edit-slot:hover { background: #dbeafe; }
+
 /* Box de Edição da Pessoa Selecionada */
 .edit-person-box {
   margin-top: 10px;
@@ -815,7 +865,7 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
     font-size: 0.84rem;
   }
 
-  /* Rascunhos Salvos: carrossel horizontal compacto (não ocupa altura vertical!) */
+  /* Rascunhos Salvos: carrossel horizontal compacto */
   .rascunhos-grid {
     display: flex;
     flex-direction: row;
@@ -838,7 +888,7 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
     font-size: 0.86rem;
   }
 
-  /* Equipe Cirúrgica em grade 2x2 compacta (metade da altura) */
+  /* Equipe Cirúrgica em grade 2x2 compacta */
   .equipe-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -861,6 +911,21 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
     min-height: 24px;
     padding: 2px 7px;
     font-size: 0.7rem;
+  }
+
+  .person-summary-box {
+    padding: 6px 8px;
+    font-size: 0.74rem;
+  }
+
+  .summary-missing {
+    font-size: 0.7rem;
+  }
+
+  .btn-edit-slot {
+    min-height: 28px;
+    font-size: 0.72rem;
+    padding: 4px 6px;
   }
 
   .edit-person-box {
@@ -931,12 +996,10 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
     white-space: nowrap;
   }
 
-  /* Mantém largura legível e permite deslizar horizontalmente como planilha */
   #cardSelecionados table { min-width: 620px; }
   #tabelaSolicitados { min-width: 720px; }
   #tabelaResultados { min-width: 740px; }
 
-  /* Congela a 1ª coluna (Código / Prioridade) à esquerda ao arrastar para o lado */
   #cardSelecionados th:first-child,
   #cardSelecionados td:first-child,
   #tabelaSolicitados th:first-child,
@@ -965,7 +1028,6 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
     background-color: #eff6ff;
   }
 
-  /* Limita largura da descrição na tabela para caberem mais colunas na tela */
   #cardSelecionados td:nth-child(3),
   #tabelaSolicitados td:nth-child(2),
   #tabelaResultados td:nth-child(2) {

@@ -1516,76 +1516,236 @@ document.getElementById("btnGerarPdf").addEventListener("click", () => {
   }, 500);
 });
 
+function gerarBlobPdfVetorial(calc) {
+  const { jsPDF } = window.jspdf;
+  const docPdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const margem = 14;
+  const larguraUtil = 210 - margem * 2;
+  let y = 14;
+
+  // Cabeçalho Azul
+  docPdf.setFillColor(27, 54, 93);
+  docPdf.roundedRect(margem, y, larguraUtil, 11, 1.5, 1.5, "F");
+  docPdf.setTextColor(255, 255, 255);
+  docPdf.setFont("helvetica", "bold");
+  docPdf.setFontSize(10.5);
+  docPdf.text("RELATÓRIO EXPLICATIVO DE ORÇAMENTO PARA CIRURGIA HOSPITALAR", 105, y + 7, { align: "center" });
+  y += 14;
+
+  // Quadro de Dados do Paciente
+  docPdf.autoTable({
+    startY: y,
+    margin: { left: margem, right: margem },
+    theme: "grid",
+    styles: { fontSize: 8.5, cellPadding: 2.5, textColor: [15, 23, 42], lineColor: [203, 213, 225], lineWidth: 0.2 },
+    body: [
+      [
+        { content: `PACIENTE:\n${calc.paciente.toUpperCase()}`, styles: { fontStyle: "bold" } },
+        { content: `CARTÃO:\n${calc.cartao || "-"}`, styles: { fontStyle: "bold" } }
+      ],
+      [
+        { content: `PLANO:\n${calc.plano.toUpperCase()}`, styles: { fontStyle: "bold" } },
+        { content: `MÚLTIPLO / VALOR US/URS/CRS:\n${formatarNumero(calc.multiploReal, 0, 4)}  /  ${formatarNumero(calc.valorUsReal, 2, 6)}`, styles: { fontStyle: "bold" } }
+      ]
+    ],
+    columnStyles: { 0: { cellWidth: 108 }, 1: { cellWidth: 74 } }
+  });
+  y = docPdf.lastAutoTable.finalY + 4;
+
+  // Texto Introdutório
+  docPdf.setFont("helvetica", "normal");
+  docPdf.setFontSize(8);
+  docPdf.setTextColor(51, 65, 85);
+  const textoIntro = "Em casos de procedimentos e/ou exames diversos no mesmo evento médico, o cálculo dos demais procedimentos deve seguir o percentual previsto nas Condições Gerais da Tabela. O valor apurado pode incidir coparticipação, se houver. Com base nas informações fornecidas pela operadora Bradesco Saúde (https://www.bradescosaude.com.br), este orçamento segue a fórmula: Valor US/URS/CRS x Quantidade US/URS/CRS x Múltiplo de Reembolso = Valor a ser reembolsado.";
+  const linhasIntro = docPdf.splitTextToSize(textoIntro, larguraUtil);
+  docPdf.text(linhasIntro, margem, y + 3);
+  y += linhasIntro.length * 3.6 + 5;
+
+  // Tabela 1: Procedimentos Solicitados
+  docPdf.setFont("helvetica", "bold");
+  docPdf.setFontSize(8.5);
+  docPdf.setTextColor(27, 54, 93);
+  docPdf.text("PROCEDIMENTO(S) SOLICITADO(S)", margem, y);
+  y += 2;
+
+  docPdf.autoTable({
+    startY: y,
+    margin: { left: margem, right: margem },
+    theme: "grid",
+    headStyles: { fillColor: [27, 54, 93], textColor: 255, fontSize: 7.2, halign: "center", valign: "middle" },
+    styles: { fontSize: 7.8, cellPadding: 2, textColor: [26, 32, 44], lineColor: [203, 213, 225], lineWidth: 0.2 },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+    head: [["CÓDIGO", "DESCRIÇÃO", "QTD\nCOD", "QTD\nAUX", "QTD\nUS/CRS", "VALOR\nUS/CRS", "MÚLT.", "(%)"]],
+    body: calc.linhasCalculadas.map(l => [
+      l.codigo,
+      l.nome.toUpperCase(),
+      l.qtd_cod,
+      l.quant_aux,
+      formatarNumero(l.qtd_us, 2, 2),
+      formatarNumero(l.valor_us, 2, 6),
+      formatarNumero(l.multiplo, 0, 4),
+      `${formatarNumero(l.percentual * 100, 0, 2)}%`
+    ]),
+    columnStyles: {
+      0: { halign: "center", fontStyle: "bold", cellWidth: 20 },
+      1: { halign: "left", cellWidth: 66 },
+      2: { halign: "center", cellWidth: 12 },
+      3: { halign: "center", cellWidth: 12 },
+      4: { halign: "right", cellWidth: 19 },
+      5: { halign: "right", cellWidth: 21 },
+      6: { halign: "center", cellWidth: 16 },
+      7: { halign: "center", cellWidth: 16 }
+    }
+  });
+  y = docPdf.lastAutoTable.finalY + 5;
+
+  // Glossário Resumido
+  docPdf.setFont("helvetica", "bold");
+  docPdf.setFontSize(7.8);
+  docPdf.setTextColor(27, 54, 93);
+  docPdf.text("CRS (Coeficiente de Reembolso de Seguros), URS (Unidade de Reembolso de Seguros), US (Unidade de Serviço):", margem, y);
+  y += 3.8;
+  docPdf.setFont("helvetica", "normal");
+  docPdf.setFontSize(7.5);
+  docPdf.setTextColor(51, 65, 85);
+  const glossario = "• Valor US/URS/CRS: unidade expressa em moeda corrente conforme o plano contratado.  • Quantidade de US/URS/CRS: prevista na tabela de reembolso para cada procedimento.  • Múltiplo de reembolso: fator multiplicador do plano.  • Valores limites de reembolso: resultado da multiplicação do valor US/URS/CRS, quantidade e múltiplo.";
+  const linhasGloss = docPdf.splitTextToSize(glossario, larguraUtil);
+  docPdf.text(linhasGloss, margem, y);
+  y += linhasGloss.length * 3.4 + 5;
+
+  // Tabela 2: Cálculo Exato do Reembolso
+  docPdf.setFont("helvetica", "bold");
+  docPdf.setFontSize(8.5);
+  docPdf.setTextColor(27, 54, 93);
+  docPdf.text("CÁLCULO EXATO DO REEMBOLSO BASEADO NAS INFORMAÇÕES FORNECIDAS PELA OPERADORA", margem, y);
+  y += 2;
+
+  const corpoTabela2 = calc.linhasCalculadas.map(l => [
+    l.codigo,
+    l.qtd_cod,
+    formatarMoeda(l.cirurgiao),
+    formatarMoeda(l.aux1),
+    formatarMoeda(l.aux2),
+    formatarMoeda(l.instrumentador)
+  ]);
+
+  corpoTabela2.push([
+    { content: "TOTAL", colSpan: 2, styles: { halign: "center", fontStyle: "bold", fillColor: [226, 232, 240] } },
+    { content: formatarMoeda(calc.totCirurgiao), styles: { halign: "right", fontStyle: "bold", fillColor: [226, 232, 240] } },
+    { content: formatarMoeda(calc.totAux1), styles: { halign: "right", fontStyle: "bold", fillColor: [226, 232, 240] } },
+    { content: formatarMoeda(calc.totAux2), styles: { halign: "right", fontStyle: "bold", fillColor: [226, 232, 240] } },
+    { content: formatarMoeda(calc.totInst), styles: { halign: "right", fontStyle: "bold", fillColor: [226, 232, 240] } }
+  ]);
+
+  corpoTabela2.push([
+    { content: "TOTAL GERAL DO ORÇAMENTO", colSpan: 5, styles: { halign: "right", fontStyle: "bold", fillColor: [27, 54, 93], textColor: 255, fontSize: 8.8 } },
+    { content: formatarMoeda(calc.totalGeral), styles: { halign: "right", fontStyle: "bold", fillColor: [27, 54, 93], textColor: 255, fontSize: 8.8 } }
+  ]);
+
+  docPdf.autoTable({
+    startY: y,
+    margin: { left: margem, right: margem },
+    theme: "grid",
+    headStyles: { fillColor: [27, 54, 93], textColor: 255, fontSize: 7.4, halign: "center", valign: "middle" },
+    styles: { fontSize: 8, cellPadding: 2.2, textColor: [26, 32, 44], lineColor: [203, 213, 225], lineWidth: 0.2 },
+    head: [["CÓDIGO", "Q. COD\nAUTORIZADO", "CIRURGIÃO", "AUXILIAR 1 (30%)", "AUXILIAR 2 (20%)", "INSTRUMENTADOR (10%)"]],
+    body: corpoTabela2,
+    columnStyles: {
+      0: { halign: "center", fontStyle: "bold", cellWidth: 26 },
+      1: { halign: "center", cellWidth: 24 },
+      2: { halign: "right", cellWidth: 33 },
+      3: { halign: "right", cellWidth: 33 },
+      4: { halign: "right", cellWidth: 33 },
+      5: { halign: "right", cellWidth: 33 }
+    }
+  });
+  y = docPdf.lastAutoTable.finalY + 3;
+
+  // Equipe Cirúrgica
+  const linhasEquipe = [];
+  const addMembro = (rotulo, p, val) => {
+    if (!p && val <= 0) return;
+    const nome = p?.nome ? p.nome.toUpperCase() : "NÃO INFORMADO";
+    const doc = p?.tipo === "doutor"
+      ? [p.registro ? `CRO${p.uf ? "/" + p.uf.toUpperCase() : ""}: ${p.registro}` : "", p.cpf ? `CPF: ${p.cpf}` : ""].filter(Boolean).join(" | ")
+      : [p?.registro ? `COREN: ${p.registro}` : "", p?.cpf ? `CPF: ${p.cpf}` : ""].filter(Boolean).join(" | ");
+    linhasEquipe.push([rotulo, nome, doc || "-", `VALOR: ${formatarMoeda(val)}`]);
+  };
+  addMembro("CIRURGIÃO:", equipeSelecionada.cirurgiao, calc.totCirurgiao);
+  if (equipeSelecionada.aux1 || calc.totAux1 > 0) addMembro("1º AUXILIAR:", equipeSelecionada.aux1, calc.totAux1);
+  if (equipeSelecionada.aux2 || calc.totAux2 > 0) addMembro("2º AUXILIAR:", equipeSelecionada.aux2, calc.totAux2);
+  if (equipeSelecionada.instrumentador || calc.totInst > 0) addMembro("INSTRUMENTADOR(A):", equipeSelecionada.instrumentador, calc.totInst);
+
+  if (linhasEquipe.length > 0) {
+    docPdf.autoTable({
+      startY: y,
+      margin: { left: margem, right: margem },
+      theme: "plain",
+      styles: { fontSize: 7.8, cellPadding: 1.6, fillColor: [248, 250, 252], textColor: [15, 23, 42] },
+      body: linhasEquipe,
+      columnStyles: {
+        0: { fontStyle: "bold", textColor: [27, 54, 93], cellWidth: 35 },
+        1: { fontStyle: "bold", cellWidth: 62 },
+        2: { textColor: [71, 85, 105], cellWidth: 51 },
+        3: { halign: "right", fontStyle: "bold", cellWidth: 34 }
+      }
+    });
+    y = docPdf.lastAutoTable.finalY + 5;
+  }
+
+  // Normas Bradesco Saúde (com quebra automática de página e margem superior garantida)
+  const normasTexto = [
+    "ORIENTAÇÕES SOBRE CÁLCULOS CONFORME DADOS FORNECIDOS PELA OPERADORA BRADESCO SAÚDE (HTTPS://WWW.BRADESCOSAUDE.COM.BR):",
+    "1. TABELA: 1.1. Esta Tabela estabelece os valores de referência para os procedimentos médicos cobertos, de acordo com as condições contratuais das apólices da Bradesco Saúde. 1.2. O Coeficiente de Reembolso de Seguros (CRS) representa a unidade básica para o cálculo desses valores. 1.3. A cada procedimento da Tabela, é atribuída uma quantidade de CRS. O valor do CRS é expresso em reais. 1.4. Para o cálculo do valor do procedimento em reais, multiplica-se a quantidade de CRS pelo valor do CRS vigente à época do evento.",
+    "2. ATENDIMENTO DE URGÊNCIA E EMERGÊNCIA: 2.1. Os atos médicos praticados em regime de urgência ou emergência terão um acréscimo de 30% nas seguintes condições: 2.1.1. No período compreendido entre 19h e 7h do dia seguinte; 2.1.2. Em qualquer horário nos sábados, domingos e feriados.",
+    "3. PROCEDIMENTOS CIRÚRGICOS - NORMAS GERAIS: 3.1. Os valores atribuídos a cada procedimento cirúrgico incluem os cuidados pós-operatórios até 10 dias após a data da cirurgia. A partir do 11º dia, quando houver necessidade, o acompanhamento passa a ser valorado de acordo com os critérios estabelecidos para as visitas hospitalares ou para as consultas em consultório. 3.2. Nos casos cirúrgicos em que se fizer necessário o acompanhamento ou assistência de outro especialista, seus honorários serão valorados de acordo com o atendimento prestado e previsto em Tabela na respectiva especialidade.",
+    "4. VALORAÇÃO DOS ATOS CIRÚRGICOS: 4.1. Quando previamente planejada ou quando for verificada, durante o ato cirúrgico, a indicação de intervenção em vários órgãos ou regiões a partir de uma mesma via de acesso, a valoração dos procedimentos corresponderá ao procedimento de maior valor - com base no valor do cirurgião -, acrescido de 50% do previsto para cada um dos demais atos médicos praticados, desde que não haja um código específico previsto para o conjunto. 4.2. Quando ocorrer mais de uma intervenção por diferentes vias de acesso, deve ser adicionado, ao procedimento de maior valor - com base no valor do cirurgião -, 70% do valor de cada um dos demais procedimentos realizados, desde que não haja código específico previsto para o conjunto. 4.3. Essas condições aplicam-se às cirurgias bilaterais, realizadas por diferentes incisões (70%) ou pela mesma incisão (50%), exceto se houver código específico previsto. 4.4. Quando duas equipes distintas realizarem simultaneamente atos cirúrgicos diferentes, a cada uma delas será atribuído o valor do procedimento realizado e previsto nesta Tabela. 4.5. Quando um ato cirúrgico for parte integrante de outro, valorar-se-á não o somatório do conjunto, mas exclusivamente o ato principal.",
+    "5. AUXILIARES: 5.1. Os honorários dos médicos auxiliares dos atos cirúrgicos serão fixados nas proporções de 30% dos honorários do cirurgião para o 1º auxiliar, 20% para os 2º e 3º auxiliares, desde que previstos em Tabela, e 10% para o(a) instrumentador(a) devidamente habilitado(a)."
+  ];
+
+  docPdf.setFontSize(7.4);
+  normasTexto.forEach((paragrafo, idx) => {
+    docPdf.setFont("helvetica", idx === 0 ? "bold" : "normal");
+    docPdf.setTextColor(idx === 0 ? 27 : 51, idx === 0 ? 54 : 65, idx === 0 ? 93 : 85);
+    const linhas = docPdf.splitTextToSize(paragrafo, larguraUtil);
+    const alturaBloco = linhas.length * 3.3 + 2.5;
+    if (y + alturaBloco > 283) {
+      docPdf.addPage();
+      y = 14;
+    }
+    docPdf.text(linhas, margem, y);
+    y += alturaBloco;
+  });
+
+  return docPdf.output("blob");
+}
+
 document.getElementById("btnEnviarPdfWhatsapp").addEventListener("click", async () => {
   if (!ultimoCalculoCache || ultimoCalculoCache.linhasCalculadas.length === 0) {
     alert("Adicione pelo menos um procedimento antes de enviar o PDF.");
     return;
   }
 
-  if (typeof html2pdf === "undefined") {
-    alert("A biblioteca de geração de PDF ainda está carregando. Tente novamente em 2 segundos.");
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    alert("A biblioteca de PDF ainda está carregando. Tente novamente em 2 segundos.");
     return;
   }
 
-  const btn = document.getElementById("btnEnviarPdfWhatsapp");
   const statusEl = document.getElementById("statusPdfWhatsapp");
-  const textoOriginal = btn.innerHTML;
-
-  btn.disabled = true;
-  btn.innerText = "Gerando arquivo PDF...";
   statusEl.innerText = "";
 
   const calc = ultimoCalculoCache;
   const nomeArquivo = gerarNomeArquivoPdf(calc.paciente);
 
-  const scrollAnteriorX = window.scrollX;
-  const scrollAnteriorY = window.scrollY;
-  window.scrollTo(0, 0);
-
-  const mainContainer = document.querySelector(".container.no-print");
-  if (mainContainer) mainContainer.style.display = "none";
-
-  const tempWrapper = document.createElement("div");
-  tempWrapper.style.position = "relative";
-  tempWrapper.style.width = "182mm";
-  tempWrapper.style.margin = "0 auto";
-  tempWrapper.style.background = "#ffffff";
-  tempWrapper.className = "pdf-render-scope";
-  tempWrapper.innerHTML = construirHtmlDocumentoPdf(calc);
-
-  document.body.appendChild(tempWrapper);
-
-  await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 150)));
-
   try {
-    const opt = {
-      margin: [14, 14, 14, 14],
-      filename: nomeArquivo,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: 800,
-        backgroundColor: "#ffffff"
-      },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      pagebreak: {
-        mode: ["css", "legacy"],
-        avoid: [".pdf-table-block", "tr", ".pdf-glossary-box", ".pdf-team-box", ".pdf-norm-p", ".pdf-norm-sub"]
-      }
-    };
-
-    const pdfBlob = await html2pdf().set(opt).from(tempWrapper).outputPdf("blob");
+    // Geração síncrona e instantânea (mantém o gesto de toque ativo para o menu Compartilhar do iPad/celular)
+    const pdfBlob = gerarBlobPdfVetorial(calc);
     const arquivoPdf = new File([pdfBlob], nomeArquivo, { type: "application/pdf" });
 
     if (navigator.canShare && navigator.canShare({ files: [arquivoPdf] })) {
       await navigator.share({
         files: [arquivoPdf],
-        title: "Relatório Explicativo de Orçamento",
-        text: `Relatório de Reembolso - ${calc.paciente}`
+        title: "Relatório Explicativo de Orçamento"
       });
       statusEl.innerText = "✓ PDF compartilhado!";
     } else {
@@ -1596,19 +1756,13 @@ document.getElementById("btnEnviarPdfWhatsapp").addEventListener("click", async 
       link.click();
 
       window.open("https://web.whatsapp.com/", "_blank");
-      statusEl.innerText = `✓ Arquivo "${nomeArquivo}" baixado! Arraste ou anexe o PDF na conversa do WhatsApp Web.`;
+      statusEl.innerText = `✓ PDF "${nomeArquivo}" baixado! Anexe na conversa do WhatsApp Web.`;
     }
   } catch (err) {
     if (err.name !== "AbortError") {
-      console.error("Erro ao gerar PDF para WhatsApp:", err);
+      console.error("Erro ao gerar/compartilhar PDF:", err);
       alert("Erro ao gerar PDF: " + err.message);
     }
-  } finally {
-    if (tempWrapper.parentNode) document.body.removeChild(tempWrapper);
-    if (mainContainer) mainContainer.style.display = "";
-    window.scrollTo(scrollAnteriorX, scrollAnteriorY);
-    btn.disabled = false;
-    btn.innerHTML = textoOriginal;
   }
 });
 

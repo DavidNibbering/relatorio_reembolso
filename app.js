@@ -50,7 +50,6 @@ let editandoSlot = {
 let tipoModalAtual = "doutor";
 let slotOrigemModal = "cirurgiao";
 
-// Estado dos Pacientes / Rascunhos Salvos
 let rascunhosSalvos = [];
 let rascunhoAtualId = null;
 
@@ -96,6 +95,45 @@ function formatarCpf(v) {
 document.getElementById("cadCpf").addEventListener("input", (e) => {
   e.target.value = formatarCpf(e.target.value);
 });
+
+// ==================== FUNÇÕES DE SUPORTE E FIREBASE (REST / SDK) ====================
+
+async function buscarColecaoRest(nomeColecao) {
+  const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${nomeColecao}?pageSize=500&key=${firebaseConfig.apiKey}`;
+  const resp = await fetch(url);
+  const json = await resp.json();
+  if (!resp.ok) {
+    throw new Error(json?.error?.message || `HTTP ${resp.status}`);
+  }
+  const lista = [];
+  (json.documents || []).forEach((docItem) => {
+    const f = docItem.fields || {};
+    const obj = { id: docItem.name.split("/").pop() };
+    Object.keys(f).forEach((k) => {
+      const c = f[k];
+      obj[k] = c?.stringValue
+        ?? (c?.booleanValue !== undefined ? Boolean(c.booleanValue) : undefined)
+        ?? (c?.doubleValue !== undefined ? Number(c.doubleValue) : (c?.integerValue !== undefined ? Number(c.integerValue) : ""));
+    });
+    lista.push(obj);
+  });
+  return lista;
+}
+
+async function carregarColecaoComFallback(nomeColecao) {
+  try {
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT_SDK")), 6000));
+    const snap = await Promise.race([getDocs(collection(db, nomeColecao)), timeout]);
+    const lista = [];
+    snap.forEach((docSnap) => {
+      lista.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    return lista;
+  } catch (err) {
+    console.warn(`Fallback REST para ${nomeColecao}:`, err.message);
+    return await buscarColecaoRest(nomeColecao);
+  }
+}
 
 // ==================== CÁLCULO DE PORCENTAGEM E GRADIENTE ====================
 
@@ -219,43 +257,6 @@ document.getElementById("checkGanhoFixo350")?.addEventListener("change", () => {
 });
 
 // ==================== PERSISTÊNCIA DE PACIENTES NO FIREBASE ====================
-
-async function buscarColecaoRest(nomeColecao) {
-  const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${nomeColecao}?pageSize=500&key=${firebaseConfig.apiKey}`;
-  const resp = await fetch(url);
-  const json = await resp.json();
-  if (!resp.ok) {
-    throw new Error(json?.error?.message || `HTTP ${resp.status}`);
-  }
-  const lista = [];
-  (json.documents || []).forEach((docItem) => {
-    const f = docItem.fields || {};
-    const obj = { id: docItem.name.split("/").pop() };
-    Object.keys(f).forEach((k) => {
-      const c = f[k];
-      obj[k] = c?.stringValue
-        ?? (c?.booleanValue !== undefined ? Boolean(c.booleanValue) : undefined)
-        ?? (c?.doubleValue !== undefined ? Number(c.doubleValue) : (c?.integerValue !== undefined ? Number(c.integerValue) : ""));
-    });
-    lista.push(obj);
-  });
-  return lista;
-}
-
-async function carregarColecaoComFallback(nomeColecao) {
-  try {
-    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT_SDK")), 6000));
-    const snap = await Promise.race([getDocs(collection(db, nomeColecao)), timeout]);
-    const lista = [];
-    snap.forEach((docSnap) => {
-      lista.push({ id: docSnap.id, ...docSnap.data() });
-    });
-    return lista;
-  } catch (err) {
-    console.warn(`Fallback REST para ${nomeColecao}:`, err.message);
-    return await buscarColecaoRest(nomeColecao);
-  }
-}
 
 async function carregarRascunhosSalvos() {
   try {
@@ -590,6 +591,7 @@ window.excluirRascunho = async (id) => {
     alert("Erro ao excluir: " + e.message);
   }
 };
+
 function limparFormularioParaNovo() {
   rascunhoAtualId = null;
   document.getElementById("tagEditandoRascunho").classList.add("hidden");
@@ -1022,7 +1024,7 @@ window.salvarNovoProfissional = async () => {
   }
 };
 
-// ==================== PROCEDIMENTOS (LISTA, CADASTRO, EDIÇÃO) ====================
+// ==================== PROCEDIMENTOS ====================
 
 function aoMudarPlano() {
   const plano = document.getElementById("planoSelect").value;
@@ -1893,7 +1895,7 @@ function gerarBlobPdfVetorial(calc) {
     "1. TABELA\n1.1. Esta Tabela estabelece os valores de referência para os procedimentos médicos cobertos, de acordo com as condições contratuais das apólices da Bradesco Saúde.\n1.2. O Coeficiente de Reembolso de Seguros (CRS) representa a unidade básica para o cálculo desses valores.\n1.3. A cada procedimento da Tabela, é atribuída uma quantidade de CRS. O valor do CRS é expresso em reais.\n1.4. Para o cálculo do valor do procedimento em reais, multiplica-se a quantidade de CRS pelo valor do CRS vigente à época do evento.",
     "2. ATENDIMENTO DE URGÊNCIA E EMERGÊNCIA\n2.1. Os atos médicos praticados em regime de urgência ou emergência terão um acréscimo de 30% nas seguintes condições:\n2.1.1. No período compreendido entre 19h e 7h do dia seguinte;\n2.1.2. Em qualquer horário nos sábados, domingos e feriados.\nTabela de Reembolso de Honorários e Serviços Médicos Produto Coletivo Empresarial Plano com mais de 100 vidas - posterior ou adaptado à Lei nº 9.656/98",
     "3. PROCEDIMENTOS CIRÚRGICOS - NORMAS GERAIS\n3.1. Os valores atribuídos a cada procedimento cirúrgico incluem os cuidados pós-operatórios até 10 dias após a data da cirurgia. A partir do 11º dia, quando houver necessidade, o acompanhamento passa a ser valorado de acordo com os critérios estabelecidos para as visitas hospitalares ou para as consultas em consultório.\n3.2. Nos casos cirúrgicos em que se fizer necessário o acompanhamento ou assistência de outro especialista, seus honorários serão valorados de acordo com o atendimento prestado e previsto em Tabela na respectiva especialidade.",
-    "4. VALORAÇÃO DOS ATOS CIRÚRGICOS\n4.1. Quando previamente planejada ou quando for verificada, durante o ato cirúrgico, a indicação de intervenção em vários órgãos ou regiões a partir de uma mesma via de acesso, a valoração dos procedimentos corresponderá ao procedimento de maior valor - com base no valor do cirurgião -, acrescido de 50% do previsto para cada um dos demais atos médicos praticados, desde que não haja um código específico previsto para o conjunto.\n4.2. Quando ocorrer mais de uma intervenção por diferentes vias de acesso, deve ser adicionado, ao procedimento de maior valor - com base no valor do cirurgião -, 70% do valor de cada um dos demais procedimentos realizados, desde que não haja código específico previsto para o conjunto.\n4.3. Essas condições aplicam-se às cirurgias bilaterais, realizadas por diferentes incisões (70%) ou pela mesma incisão (50%), exceto se houver código específico previsto.\n4.4. Quando duas equipes distintas realizarem simultaneamente atos cirúrgicos diferentes, a cada uma delas será atribuído o valor do procedimento realizado e previsto nesta Tabela.\n4.5. Quando um ato cirúrgico for parte integrante de outro, valorar-se-á não o somatório do conjunto, mas exclusivamente o ato principal.",
+    "4. VALORAÇÃO DOS ATOS CIRÚRGICOS\n4.1. Quando previamente planejada ou quando for verificada, durante o ato cirúrgico, a indicação de intervenção em vários órgãos ou regiões a partir de uma mesma via de acesso, a valoração dos procedimentos corresponderá ao procedimento de maior valor - com base no valor do cirurgião -, acrescido de 50% do previsto para cada um dos demais atos médicos praticados, desde que não haja um código específico previsto para o conjunto.\n4.2. Quando ocorrer mais de uma intervenção por diferentes vias de acesso, deve ser adicionado, ao procedimento de maior valor - com base no valor do cirurgião -, 70% do valor de cada um dos demais procedimentos realizados, desde que não haja código específico previsto para o conjunto.\n4.3. Essas condições aplicam-se às cirurgias bilaterais, realizadas por diferentes incisões (70%) ou pela mesma incisão (50%), exceto se houver código específico previsto.\n4.4. Quando duas equipes distintas realizarem simultaneamente atos cirúrgicos diferentes, a cada uma delas será atribuído o valor do procedimento realizado e previsto nesta Tabela.\n4.5. Quando um ato cirúrgico for parte integrante de otro, valorar-se-á não o somatório do conjunto, mas exclusivamente o ato principal.",
     "5. AUXILIARES\n5.1. Os honorários dos médicos auxiliares dos atos cirúrgicos serão fixados nas proporções de 30% dos honorários do cirurgião para o 1º auxiliar, 20% para os 2º e 3º auxiliares, desde que previstos em Tabela, e 10% para o(a) instrumentador(a) devidamente habilitado(a)."
   ];
 

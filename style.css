@@ -1,5 +1,6 @@
 * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-body { background: #f4f6f8; color: #1e293b; margin: 0; padding: 24px 16px; }
+html { -webkit-text-size-adjust: 100%; }
+body { background: #f4f6f8; color: #1e293b; margin: 0; padding: 24px 16px; overflow-x: hidden; }
 .container { max-width: 1220px; margin: 0 auto; }
 .card { background: #fff; border-radius: 10px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
 h1 { font-size: 1.45rem; margin: 0 0 16px 0; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
@@ -16,14 +17,16 @@ input, select, textarea {
   background: #fff;
   color: #0f172a;
   width: 100%;
+  min-height: 40px;
 }
-input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
 textarea {
   resize: vertical;
   min-height: 78px;
   line-height: 1.45;
   font-family: inherit;
 }
+button { touch-action: manipulation; }
 .status { font-size: 0.85rem; margin-top: 6px; color: #64748b; }
 .erro { color: #dc2626; font-weight: 600; }
 .hidden { display: none !important; }
@@ -136,7 +139,9 @@ textarea {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  min-height: 40px;
 }
 .btn-salvar-rascunho:hover { background: #1e293b; }
 .btn-salvar-rascunho:disabled { background: #94a3b8; cursor: wait; }
@@ -149,16 +154,18 @@ textarea {
   font-size: 0.84rem;
   font-weight: 600;
   cursor: pointer;
+  min-height: 40px;
 }
 .btn-novo-relatorio:hover { background: #cbd5e1; }
 
 /* Lista de Rascunhos / Relatórios Salvos */
 .rascunhos-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
   gap: 12px;
-  max-height: 340px;
+  max-height: 360px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding-right: 4px;
 }
 .rascunho-card {
@@ -223,30 +230,32 @@ textarea {
   background: #2563eb;
   color: #fff;
   border: none;
-  padding: 5px 12px;
+  padding: 7px 12px;
   border-radius: 5px;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
   flex: 1;
+  min-height: 34px;
 }
 .btn-abrir-rascunho:hover { background: #1d4ed8; }
 .btn-del-rascunho {
   background: #fee2e2;
   color: #b91c1c;
   border: none;
-  padding: 5px 9px;
+  padding: 7px 11px;
   border-radius: 5px;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
+  min-height: 34px;
 }
 .btn-del-rascunho:hover { background: #fecaca; }
 
 /* Equipe Cirúrgica - Grid e Autocomplete */
 .equipe-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 16px;
 }
 .equipe-slot {
@@ -261,17 +270,19 @@ textarea {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 6px;
+  gap: 8px;
 }
 .slot-header label { margin-bottom: 0; font-size: 0.88rem; color: #0f172a; }
 .btn-cad-mini {
   background: #2563eb;
   color: #fff;
   border: none;
-  padding: 4px 10px;
+  padding: 5px 11px;
   border-radius: 5px;
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
+  min-height: 30px;
 }
 .btn-cad-mini:hover { background: #1d4ed8; }
 .dropdown-wrap { position: relative; }
@@ -280,8 +291,9 @@ textarea {
   top: 100%;
   left: 0;
   right: 0;
-  max-height: 210px;
+  max-height: 220px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background: #fff;
   border: 1px solid #cbd5e1;
   border-top: none;
@@ -290,15 +302,15 @@ textarea {
   z-index: 50;
 }
 .dropdown-item {
-  padding: 9px 12px;
+  padding: 10px 12px;
   cursor: pointer;
   border-bottom: 1px solid #f1f5f9;
-  font-size: 0.86rem;
+  font-size: 0.88rem;
 }
 .dropdown-item:last-child { border-bottom: none; }
 .dropdown-item:hover { background: #eff6ff; }
 .dropdown-item strong { display: block; color: #0f172a; }
-.dropdown-item span { font-size: 0.76rem; color: #64748b; }
+.dropdown-item span { font-size: 0.78rem; color: #64748b; }
 .dropdown-empty { padding: 10px 12px; font-size: 0.82rem; color: #64748b; }
 
 /* Box de Edição da Pessoa Selecionada */
@@ -315,6 +327,7 @@ textarea {
 .edit-person-box input, .edit-person-box select {
   padding: 6px 8px;
   font-size: 0.84rem;
+  min-height: 36px;
 }
 .edit-mini-label {
   font-size: 0.72rem;
@@ -339,23 +352,25 @@ textarea {
   background: #16a34a;
   color: #fff;
   border: none;
-  padding: 5px 10px;
+  padding: 7px 10px;
   border-radius: 5px;
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   flex: 1;
+  min-height: 34px;
 }
 .btn-save-edit:hover { background: #15803d; }
 .btn-clear-slot {
   background: #e2e8f0;
   color: #334155;
   border: none;
-  padding: 5px 9px;
+  padding: 7px 10px;
   border-radius: 5px;
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
+  min-height: 34px;
 }
 .btn-clear-slot:hover { background: #cbd5e1; }
 
@@ -369,6 +384,7 @@ textarea {
   justify-content: center;
   padding: 16px;
   z-index: 100;
+  overflow-y: auto;
 }
 .modal-card {
   background: #fff;
@@ -377,6 +393,7 @@ textarea {
   max-width: 460px;
   padding: 24px;
   box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+  margin: auto;
 }
 .modal-card h3 {
   margin: 0 0 16px 0;
@@ -392,7 +409,7 @@ textarea {
 }
 .tipo-btn {
   flex: 1;
-  padding: 9px;
+  padding: 10px;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   background: #f8fafc;
@@ -400,6 +417,7 @@ textarea {
   font-size: 0.88rem;
   color: #475569;
   cursor: pointer;
+  min-height: 42px;
 }
 .tipo-btn.ativo {
   background: #2563eb;
@@ -416,27 +434,30 @@ textarea {
   background: #e2e8f0;
   color: #334155;
   border: none;
-  padding: 9px 16px;
+  padding: 10px 16px;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
+  min-height: 42px;
 }
 .btn-salvar-modal {
   background: #10b981;
   color: #fff;
   border: none;
-  padding: 9px 18px;
+  padding: 10px 18px;
   border-radius: 6px;
   font-weight: 700;
   cursor: pointer;
+  min-height: 42px;
 }
 .btn-salvar-modal:hover { background: #059669; }
 
 /* Lista de procedimentos disponíveis */
 .search-box { width: 100%; margin-bottom: 10px; }
 .proc-list {
-  max-height: 250px;
+  max-height: 280px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
 }
@@ -445,23 +466,23 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 9px 14px;
+  padding: 10px 14px;
   border-bottom: 1px solid #f1f5f9;
 }
 .proc-item:last-child { border-bottom: none; }
 .proc-item:hover { background: #f8fafc; }
-.proc-info { flex: 1; }
+.proc-info { flex: 1; min-width: 0; }
 .proc-code { font-weight: 700; color: #2563eb; font-size: 0.86rem; margin-right: 6px; }
-.proc-name { font-size: 0.9rem; color: #1e293b; }
-.proc-meta { font-size: 0.78rem; color: #64748b; margin-top: 2px; }
+.proc-name { font-size: 0.9rem; color: #1e293b; word-break: break-word; }
+.proc-meta { font-size: 0.78rem; color: #64748b; margin-top: 3px; }
 .btn-add {
   background: #10b981;
   color: #fff;
   border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  font-size: 1.2rem;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  font-size: 1.3rem;
   font-weight: 700;
   cursor: pointer;
   flex-shrink: 0;
@@ -512,8 +533,8 @@ textarea {
 }
 .checklist-box strong { color: #0f172a; }
 
-/* Tabelas */
-.table-wrap { overflow-x: auto; }
+/* Tabelas (Desktop & iPad) */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; margin-top: 6px; }
 th, td { text-align: left; padding: 9px 8px; border: 1px solid #e2e8f0; vertical-align: middle; }
 th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; text-transform: uppercase; }
@@ -526,6 +547,7 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
   font-weight: 600;
   border: 1px solid #cbd5e1;
   border-radius: 5px;
+  min-height: 34px;
 }
 .input-pct {
   width: 64px;
@@ -540,23 +562,25 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
   background: #ef4444;
   color: #fff;
   border: none;
-  padding: 5px 9px;
+  padding: 6px 10px;
   border-radius: 5px;
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
+  min-height: 32px;
 }
 .btn-rem:hover { background: #dc2626; }
 .btn-princ {
   background: #f1f5f9;
   color: #475569;
   border: 1px solid #cbd5e1;
-  padding: 5px 10px;
+  padding: 6px 10px;
   border-radius: 5px;
   font-size: 0.76rem;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+  min-height: 32px;
 }
 .btn-princ:hover { background: #e2e8f0; }
 .btn-princ.ativo {
@@ -568,26 +592,29 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
   background: #2563eb;
   color: #fff;
   border: none;
-  padding: 5px 12px;
+  padding: 7px 12px;
   border-radius: 6px;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
+  min-height: 34px;
 }
 .btn-auto:hover { background: #1d4ed8; }
 .btn-whatsapp {
   background: #25D366;
   color: #fff;
   border: none;
-  padding: 8px 16px;
+  padding: 10px 16px;
   border-radius: 6px;
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  min-height: 42px;
 }
 .btn-whatsapp:hover { background: #1ebe5d; }
 .btn-whatsapp:disabled { background: #94a3b8; cursor: wait; }
@@ -603,8 +630,10 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 9px;
   box-shadow: 0 3px 8px rgba(18, 140, 126, 0.25);
+  min-height: 46px;
 }
 .btn-whatsapp-pdf:hover { background: #0e7266; }
 .btn-whatsapp-pdf:disabled { background: #94a3b8; cursor: wait; }
@@ -620,8 +649,10 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 9px;
   box-shadow: 0 3px 8px rgba(30, 58, 138, 0.25);
+  min-height: 46px;
 }
 .btn-pdf-export:hover { background: #172554; }
 
@@ -677,6 +708,288 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
   font-size: 0.86rem;
   color: #0f172a;
   line-height: 1.45;
+}
+
+/* ================= RESPONSIVIDADE PARA IPAD (TABLET) ================= */
+@media (max-width: 1024px) {
+  body { padding: 16px 12px; }
+  .card { padding: 18px; }
+  .equipe-grid { grid-template-columns: repeat(2, 1fr); }
+  .rascunhos-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ================= RESPONSIVIDADE PARA CELULAR (MOBILE) ================= */
+@media (max-width: 768px) {
+  body {
+    padding: 10px 8px 28px 8px;
+  }
+
+  .card {
+    padding: 14px 12px;
+    border-radius: 10px;
+    margin-bottom: 14px;
+  }
+
+  h1 {
+    font-size: 1.2rem;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+  }
+
+  h2 {
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+
+  /* Evita zoom automático no Safari iOS ao tocar em campos */
+  input, select, textarea,
+  .edit-person-box input, .edit-person-box select,
+  .input-vezes, .input-pct, .select-aux {
+    font-size: 16px !important;
+    min-height: 44px;
+  }
+
+  .row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .row .form-group {
+    min-width: 100%;
+    width: 100%;
+  }
+
+  /* Barra de progresso e botões de rascunho empilhados */
+  .progresso-painel {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .progresso-info {
+    min-width: 100%;
+  }
+
+  .acoes-rascunho {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 8px;
+  }
+
+  .btn-novo-relatorio,
+  .btn-salvar-rascunho {
+    width: 100%;
+    min-height: 44px;
+    font-size: 0.9rem;
+  }
+
+  /* Rascunhos salvos e Equipe Cirúrgica em 1 coluna */
+  .rascunhos-grid {
+    grid-template-columns: 1fr;
+    max-height: 380px;
+  }
+
+  .equipe-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .equipe-slot {
+    padding: 12px;
+  }
+
+  .btn-cad-mini {
+    min-height: 36px;
+    padding: 6px 12px;
+    font-size: 0.82rem;
+  }
+
+  .dropdown-item {
+    padding: 12px;
+  }
+
+  .btn-add {
+    width: 44px;
+    height: 44px;
+    font-size: 1.45rem;
+  }
+
+  /* Botões principais em largura total no celular */
+  .btn-whatsapp,
+  .btn-whatsapp-pdf,
+  .btn-pdf-export {
+    width: 100%;
+    min-height: 48px;
+    font-size: 0.95rem;
+    padding: 12px 16px;
+  }
+
+  .capture-area {
+    padding: 10px;
+  }
+
+  .capture-header {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .capture-header > div:last-child {
+    text-align: left !important;
+  }
+
+  /* ===== TABELAS TRANSFORMADAS EM CARDS NO CELULAR ===== */
+  .table-wrap {
+    overflow-x: visible;
+  }
+
+  #cardSelecionados table,
+  #cardCalculo table {
+    border: none;
+  }
+
+  #cardSelecionados thead,
+  #cardCalculo thead {
+    display: none;
+  }
+
+  #cardSelecionados tbody,
+  #cardCalculo tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  #cardSelecionados tbody tr,
+  #cardCalculo tbody tr {
+    display: block;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 8px 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  #cardSelecionados tbody td,
+  #cardCalculo tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border: none;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: right !important;
+    white-space: normal;
+    font-size: 0.9rem;
+  }
+
+  #cardSelecionados tbody td:last-child,
+  #cardCalculo tbody td:last-child {
+    border-bottom: none;
+  }
+
+  #cardSelecionados tbody td::before,
+  #cardCalculo tbody td::before {
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #64748b;
+    text-transform: uppercase;
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  /* Rótulos da Tabela de Procedimentos Adicionados */
+  #tabelaSelecionados td:nth-child(1)::before { content: "Prioridade"; }
+  #tabelaSelecionados td:nth-child(2)::before { content: "Código"; }
+  #tabelaSelecionados td:nth-child(3)::before { content: "Procedimento"; }
+  #tabelaSelecionados td:nth-child(4)::before { content: "Vezes"; }
+  #tabelaSelecionados td:nth-child(5)::before { content: "QTD US/CRS"; }
+  #tabelaSelecionados td:nth-child(6)::before { content: "Auxiliares"; }
+  #tabelaSelecionados td:nth-child(7)::before { content: "Ação"; }
+
+  .input-vezes,
+  .select-aux {
+    width: 96px;
+  }
+
+  .btn-princ,
+  .btn-rem {
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 0.84rem;
+  }
+
+  /* Rótulos da Tabela 1 (Procedimentos Solicitados) */
+  #tabelaSolicitados td:nth-child(1)::before { content: "Código"; }
+  #tabelaSolicitados td:nth-child(2)::before { content: "Descrição"; }
+  #tabelaSolicitados td:nth-child(3)::before { content: "QTD COD"; }
+  #tabelaSolicitados td:nth-child(4)::before { content: "QTD AUX"; }
+  #tabelaSolicitados td:nth-child(5)::before { content: "QTD US/CRS"; }
+  #tabelaSolicitados td:nth-child(6)::before { content: "Valor US"; }
+  #tabelaSolicitados td:nth-child(7)::before { content: "Múltiplo"; }
+  #tabelaSolicitados td:nth-child(8)::before { content: "(%) Editável"; }
+
+  #tabelaSolicitados td:nth-child(8) {
+    justify-content: space-between;
+  }
+
+  .input-pct {
+    width: 88px;
+    display: inline-block;
+  }
+
+  /* Rótulos da Tabela 2 (Cálculo Exato do Reembolso) */
+  #tabelaResultados tr:not(.row-total):not(.row-total-geral) td:nth-child(1)::before { content: "Código"; }
+  #tabelaResultados tr:not(.row-total):not(.row-total-geral) td:nth-child(2)::before { content: "Descrição"; }
+  #tabelaResultados tr:not(.row-total):not(.row-total-geral) td:nth-child(3)::before { content: "Valor Base"; }
+  #tabelaResultados tr:not(.row-total):not(.row-total-geral) td:nth-child(4)::before { content: "Cirurgião"; }
+  #tabelaResultados tr:not(.row-total):not(.row-total-geral) td:nth-child(5)::before { content: "1º Auxiliar (30%)"; }
+  #tabelaResultados tr:not(.row-total):not(.row-total-geral) td:nth-child(6)::before { content: "2º Auxiliar (20%)"; }
+  #tabelaResultados tr:not(.row-total):not(.row-total-geral) td:nth-child(7)::before { content: "Instrumentador (10%)"; }
+
+  /* Totais da Tabela 2 no Celular */
+  #tabelaResultados tr.row-total {
+    background: #f8fafc;
+    border: 2px solid #94a3b8;
+  }
+  #tabelaResultados tr.row-total td:nth-child(1) {
+    justify-content: center;
+    font-size: 0.85rem;
+    color: #1e293b;
+  }
+  #tabelaResultados tr.row-total td:nth-child(2)::before { content: "Total Cirurgião"; }
+  #tabelaResultados tr.row-total td:nth-child(3)::before { content: "Total 1º Auxiliar"; }
+  #tabelaResultados tr.row-total td:nth-child(4)::before { content: "Total 2º Auxiliar"; }
+  #tabelaResultados tr.row-total td:nth-child(5)::before { content: "Total Instrumentador"; }
+
+  #tabelaResultados tr.row-total-geral {
+    background: #eff6ff;
+    border: 2px solid #2563eb;
+  }
+  #tabelaResultados tr.row-total-geral td:nth-child(1) {
+    justify-content: center;
+    font-size: 0.82rem;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #bfdbfe;
+  }
+  #tabelaResultados tr.row-total-geral td:nth-child(2) {
+    justify-content: center;
+    font-size: 1.15rem;
+    padding-top: 6px;
+  }
+
+  /* Modal no celular */
+  .modal-card {
+    padding: 18px 14px;
+  }
+  .modal-footer {
+    flex-direction: column-reverse;
+  }
+  .modal-footer button {
+    width: 100%;
+  }
 }
 
 /* ================= ESTILOS DO DOCUMENTO PDF (IMPRESSÃO E HTML2PDF) ================= */

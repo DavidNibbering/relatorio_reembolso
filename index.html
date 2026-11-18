@@ -14,18 +14,28 @@
 
 <div class="container no-print">
 
-  <!-- Painel de Relatórios / Rascunhos Salvos -->
-  <div class="card" id="cardRascunhos">
-    <h2>
-      <span>Relatórios / Rascunhos Salvos <span class="badge" id="badgeRascunhos">0</span></span>
-      <button type="button" class="btn-auto" id="btnAtualizarRascunhos" style="width: auto;">Atualizar Lista</button>
-    </h2>
-    <input type="text" id="buscaRascunhoInput" class="search-box" placeholder="Buscar relatório salvo por nome do paciente, plano, cartão ou observação...">
-    <div id="listaRascunhosContainer">
-      <div style="font-size: 0.86rem; color: #64748b;">Carregando relatórios salvos...</div>
-    </div>
+  <!-- Lista de Pacientes (Pendentes / Em andamento) -->
+<div class="card">
+  <h2>
+    <span>Pacientes <span id="badgeRascunhos" class="badge">0</span></span>
+    <button type="button" id="btnAtualizarRascunhos" class="btn-auto" style="background: #475569;">Atualizar Lista</button>
+  </h2>
+  <input type="text" id="buscaRascunhoInput" class="search-box" placeholder="Buscar paciente por nome, plano, cartão ou observação...">
+  <div id="listaRascunhosContainer">
+    <div style="font-size: 0.86rem; color: #64748b;">Carregando pacientes...</div>
   </div>
+</div>
 
+<!-- Lista de Pacientes já enviados -->
+<div class="card">
+  <h2>
+    <span>Pacientes já enviados <span id="badgeEnviados" class="badge" style="background:#dcfce7; color:#166534;">0</span></span>
+  </h2>
+  <input type="text" id="buscaEnviadosInput" class="search-box" placeholder="Buscar paciente já enviado...">
+  <div id="listaEnviadosContainer">
+    <div style="font-size: 0.86rem; color: #64748b;">Nenhum paciente enviado ainda.</div>
+  </div>
+</div>
   <!-- Dados Principais do Reembolso -->
   <div class="card">
     <h1>
@@ -291,6 +301,15 @@
         Imprimir Relatório
       </button>
     </div>
+
+    <!-- Check de PDF Enviado para Cirurgião (Aparece quando 100% preenchido) -->
+  <div id="blocoCheckEnviado" class="enviado-box hidden">
+    <label class="enviado-check-label" for="checkPdfEnviadoCirurgiao">
+      <input type="checkbox" id="checkPdfEnviadoCirurgiao">
+      <span>✓ PDF do paciente enviado para cirurgião</span>
+    </label>
+    <span id="statusCheckEnviado" style="font-size: 0.8rem; color: #475569;"></span>
+  </div>
 
     <div class="checklist-box">
       <strong>Checklist Preventivo Bradesco Saúde (Antes de Protocolar):</strong>

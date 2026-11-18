@@ -1502,26 +1502,6 @@ function gerarNomeArquivoPdf(paciente) {
   return `RELATORIO_REEMBOLSO_${nomeLimpo || "PACIENTE"}.pdf`;
 }
 
-document.getElementById("btnGerarPdf").addEventListener("click", () => {
-  if (!ultimoCalculoCache || ultimoCalculoCache.linhasCalculadas.length === 0) {
-    alert("Adicione pelo menos um procedimento antes de gerar o PDF.");
-    return;
-  }
-
-  const calc = ultimoCalculoCache;
-  const printContainer = document.getElementById("printDocument");
-  printContainer.innerHTML = construirHtmlDocumentoPdf(calc);
-
-  const tituloOriginal = document.title;
-  document.title = gerarNomeArquivoPdf(calc.paciente).replace(/\.pdf$/i, "");
-
-  window.print();
-
-  setTimeout(() => {
-    document.title = tituloOriginal;
-  }, 500);
-});
-
 function gerarBlobPdfVetorial(calc) {
   const { jsPDF } = window.jspdf;
   const docPdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -1699,7 +1679,7 @@ function gerarBlobPdfVetorial(calc) {
     y = docPdf.lastAutoTable.finalY + 5;
   }
 
-  // Condições Gerais Bradesco Saúde (texto exato após o link da Bradesco)
+  // Condições Gerais Bradesco Saúde
   const normasTexto = [
     "SEGUE ABAIXO ORIENTAÇÕES SOBRE CÁLCULOS CONFORME DADOS FORNECIDOS PELA OPERADORA BRADESCO SAÚDE ATRAVÉS DO SITE HTTPS://WWW.BRADESCOSAUDE.COM.BR:",
     "1. TABELA\n1.1. Esta Tabela estabelece os valores de referência para os procedimentos médicos cobertos, de acordo com as condições contratuais das apólices da Bradesco Saúde.\n1.2. O Coeficiente de Reembolso de Seguros (CRS) representa a unidade básica para o cálculo desses valores.\n1.3. A cada procedimento da Tabela, é atribuída uma quantidade de CRS. O valor do CRS é expresso em reais.\n1.4. Para o cálculo do valor do procedimento em reais, multiplica-se a quantidade de CRS pelo valor do CRS vigente à época do evento.",
@@ -1723,7 +1703,7 @@ function gerarBlobPdfVetorial(calc) {
     y += alturaBloco;
   });
 
-  // Local e Data atual no final, sem espaço para assinatura
+  // Local e Data atual no final
   if (y + 10 > 283) {
     docPdf.addPage();
     y = 14;
@@ -1737,6 +1717,51 @@ function gerarBlobPdfVetorial(calc) {
 
   return docPdf.output("blob");
 }
+
+// Botão "Imprimir Relatório" usando o EXATO mesmo PDF vetorial do WhatsApp
+document.getElementById("btnGerarPdf").addEventListener("click", () => {
+  if (!ultimoCalculoCache || ultimoCalculoCache.linhasCalculadas.length === 0) {
+    alert("Adicione pelo menos um procedimento antes de imprimir o relatório.");
+    return;
+  }
+
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    alert("A biblioteca de PDF ainda está carregando. Tente novamente em 2 segundos.");
+    return;
+  }
+
+  const calc = ultimoCalculoCache;
+  const pdfBlob = gerarBlobPdfVetorial(calc);
+  const urlBlob = URL.createObjectURL(pdfBlob);
+
+  // Remove iframe anterior se existir
+  const antigoIframe = document.getElementById("iframePrintPdfVetorial");
+  if (antigoIframe) antigoIframe.remove();
+
+  const iframePrint = document.createElement("iframe");
+  iframePrint.id = "iframePrintPdfVetorial";
+  iframePrint.style.position = "fixed";
+  iframePrint.style.right = "0";
+  iframePrint.style.bottom = "0";
+  iframePrint.style.width = "0";
+  iframePrint.style.height = "0";
+  iframePrint.style.border = "0";
+  iframePrint.src = urlBlob;
+
+  document.body.appendChild(iframePrint);
+
+  iframePrint.onload = () => {
+    setTimeout(() => {
+      try {
+        iframePrint.contentWindow.focus();
+        iframePrint.contentWindow.print();
+      } catch (e) {
+        // Fallback para Safari/iPad caso bloqueie impressão via iframe
+        window.open(urlBlob, "_blank");
+      }
+    }, 250);
+  };
+});
 
 document.getElementById("btnEnviarPdfWhatsapp").addEventListener("click", async () => {
   if (!ultimoCalculoCache || ultimoCalculoCache.linhasCalculadas.length === 0) {
@@ -1812,7 +1837,19 @@ document.getElementById("btnEnviarWhatsapp").addEventListener("click", async () 
     const canvas = await html2canvas(area, {
       scale: 2,
       backgroundColor: "#ffffff",
-      windowWidth: Math.max(area.scrollWidth + 60, 1100)
+      windowWidth: 1100,
+      onclone: (docClone) => {
+        const areaClone = docClone.getElementById("areaCapturaTabela2");
+        if (areaClone) {
+          areaClone.style.width = "1020px";
+          const thead = areaClone.querySelector("thead");
+          const tbody = areaClone.querySelector("tbody");
+          if (thead) thead.style.display = "table-header-group";
+          if (tbody) tbody.style.display = "table-row-group";
+          areaClone.querySelectorAll("tr").forEach(tr => { tr.style.display = "table-row"; });
+          areaClone.querySelectorAll("td").forEach(td => { td.style.display = "table-cell"; });
+        }
+      }
     });
 
     const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));

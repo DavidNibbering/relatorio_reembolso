@@ -42,6 +42,12 @@ let equipeSelecionada = {
   aux2: null,
   instrumentador: null
 };
+let editandoSlot = {
+  cirurgiao: false,
+  aux1: false,
+  aux2: false,
+  instrumentador: false
+};
 let tipoModalAtual = "doutor";
 let slotOrigemModal = "cirurgiao";
 
@@ -445,6 +451,12 @@ window.carregarRascunhoNoFormulario = (id) => {
     aux2: p.equipe?.aux2 || null,
     instrumentador: p.equipe?.instrumentador || null
   };
+  editandoSlot = {
+    cirurgiao: false,
+    aux1: false,
+    aux2: false,
+    instrumentador: false
+  };
 
   ["cirurgiao", "aux1", "aux2", "instrumentador"].forEach((slot) => {
     const pessoa = equipeSelecionada[slot];
@@ -492,6 +504,7 @@ function limparFormularioParaNovo() {
   document.getElementById("observacoesInput").value = "";
 
   equipeSelecionada = { cirurgiao: null, aux1: null, aux2: null, instrumentador: null };
+  editandoSlot = { cirurgiao: false, aux1: false, aux2: false, instrumentador: false };
   ["cirurgiao", "aux1", "aux2", "instrumentador"].forEach((slot) => {
     document.getElementById(`busca_${slot}`).value = "";
     document.getElementById(`edit_${slot}`).innerHTML = "";
@@ -647,6 +660,7 @@ window.selecionarProfissionalSlot = (slot, profId) => {
   if (!prof) return;
 
   equipeSelecionada[slot] = { ...prof };
+  editandoSlot[slot] = false;
   document.getElementById(`busca_${slot}`).value = prof.nome;
   document.getElementById(`lista_${slot}`).classList.add("hidden");
   renderizarBoxEdicaoSlot(slot);
@@ -655,10 +669,33 @@ window.selecionarProfissionalSlot = (slot, profId) => {
 
 window.limparSlotEquipe = (slot) => {
   equipeSelecionada[slot] = null;
+  editandoSlot[slot] = false;
   document.getElementById(`busca_${slot}`).value = "";
   document.getElementById(`edit_${slot}`).innerHTML = "";
   atualizarTudo();
 };
+
+window.alternarEdicaoSlot = (slot, abrir) => {
+  editandoSlot[slot] = abrir;
+  renderizarBoxEdicaoSlot(slot);
+};
+
+function obterCamposFaltantesProfissional(p) {
+  if (!p) return [];
+  const faltando = [];
+  if (!p.nome || !p.nome.trim()) faltando.push("Nome");
+
+  if (p.tipo === "doutor") {
+    if (!p.registro || !p.registro.trim()) faltando.push("CRO");
+    if (!p.uf || !p.uf.trim()) faltando.push("UF");
+    if (!p.cpf || !p.cpf.trim()) faltando.push("CPF");
+  } else {
+    // Para instrumentador, COREN é opcional; Nome e CPF são obrigatórios
+    if (!p.cpf || !p.cpf.trim()) faltando.push("CPF");
+  }
+
+  return faltando;
+}
 
 function renderizarBoxEdicaoSlot(slot) {
   const container = document.getElementById(`edit_${slot}`);
@@ -670,6 +707,39 @@ function renderizarBoxEdicaoSlot(slot) {
   }
 
   const ehDoutor = p.tipo === "doutor";
+  const faltando = obterCamposFaltantesProfissional(p);
+  const htmlAlertaFaltando = faltando.length > 0
+    ? `<div class="summary-missing">⚠ Falta preencher: ${escaparHtml(faltando.join(", "))}</div>`
+    : "";
+
+  // MODO 1: Resumo compacto (padrão ao selecionar)
+  if (!editandoSlot[slot]) {
+    const linhaRegistro = ehDoutor
+      ? `CRO${p.uf ? "-" + p.uf.toUpperCase() : ""}: ${p.registro ? escaparHtml(p.registro) : '<span style="color:#dc2626;">Não inf.</span>'}`
+      : `COREN: ${p.registro ? escaparHtml(p.registro) : '<span style="color:#64748b;">Opcional</span>'}`;
+
+    const linhaCpf = p.cpf
+      ? escaparHtml(p.cpf)
+      : '<span style="color:#dc2626;">Não inf.</span>';
+
+    container.innerHTML = `
+      <div class="person-summary-box ${faltando.length > 0 ? "incompleto" : ""}">
+        <div class="summary-lines">
+          <div class="summary-line"><strong>${escaparHtml(p.nome || "(Sem nome)")}</strong></div>
+          <div class="summary-line">${linhaRegistro}</div>
+          <div class="summary-line">CPF: ${linhaCpf}</div>
+        </div>
+        ${htmlAlertaFaltando}
+        <div class="summary-actions">
+          <button type="button" class="btn-edit-slot" onclick="alternarEdicaoSlot('${slot}', true)">✎ Editar</button>
+          <button type="button" class="btn-clear-slot" onclick="limparSlotEquipe('${slot}')">Limpar</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // MODO 2: Formulário de edição aberto
   const optionsUf = UFS_BRASIL.map(uf => `<option value="${uf}" ${p.uf === uf ? "selected" : ""}>${uf}</option>`).join("");
 
   container.innerHTML = `
@@ -699,9 +769,10 @@ function renderizarBoxEdicaoSlot(slot) {
         <span class="edit-mini-label">CPF</span>
         <input type="text" id="ed_cpf_${slot}" maxlength="14" value="${escaparHtml(p.cpf)}" oninput="this.value = window.formatarCpfGlobal(this.value); sincronizarEdicaoLocal('${slot}')">
       </div>
+      <div id="alerta_ed_${slot}">${htmlAlertaFaltando}</div>
       <div class="edit-actions">
-        <button type="button" class="btn-save-edit" id="btn_save_${slot}" onclick="salvarEdicaoProfissional('${slot}')">Salvar Alterações</button>
-        <button type="button" class="btn-clear-slot" onclick="limparSlotEquipe('${slot}')">Limpar</button>
+        <button type="button" class="btn-save-edit" id="btn_save_${slot}" onclick="salvarEdicaoProfissional('${slot}')">Salvar</button>
+        <button type="button" class="btn-clear-slot" onclick="alternarEdicaoSlot('${slot}', false)">Fechar</button>
       </div>
     </div>
   `;
@@ -719,6 +790,15 @@ window.sincronizarEdicaoLocal = (slot) => {
   }
   p.cpf = document.getElementById(`ed_cpf_${slot}`).value;
   document.getElementById(`busca_${slot}`).value = p.nome;
+
+  const alertaEl = document.getElementById(`alerta_ed_${slot}`);
+  if (alertaEl) {
+    const faltando = obterCamposFaltantesProfissional(p);
+    alertaEl.innerHTML = faltando.length > 0
+      ? `<div class="summary-missing">⚠ Falta preencher: ${escaparHtml(faltando.join(", "))}</div>`
+      : "";
+  }
+
   atualizarTudo();
 };
 
@@ -743,6 +823,8 @@ window.salvarEdicaoProfissional = async (slot) => {
     if (idx !== -1) {
       todosProfissionais[idx] = { ...todosProfissionais[idx], ...dadosAtualizados };
     }
+    equipeSelecionada[slot] = { ...equipeSelecionada[slot], ...dadosAtualizados };
+
     ["cirurgiao", "aux1", "aux2", "instrumentador"].forEach((outroSlot) => {
       if (outroSlot !== slot && equipeSelecionada[outroSlot]?.id === p.id) {
         equipeSelecionada[outroSlot] = { ...equipeSelecionada[outroSlot], ...dadosAtualizados };
@@ -751,12 +833,13 @@ window.salvarEdicaoProfissional = async (slot) => {
       }
     });
 
-    btn.innerText = "✓ Salvo!";
-    setTimeout(() => { btn.innerText = "Salvar Alterações"; btn.disabled = false; }, 1600);
+    editandoSlot[slot] = false;
+    renderizarBoxEdicaoSlot(slot);
+    atualizarTudo();
   } catch (e) {
     console.error("Erro ao atualizar profissional:", e);
     alert("Erro ao salvar alterações: " + e.message);
-    btn.innerText = "Salvar Alterações";
+    btn.innerText = "Salvar";
     btn.disabled = false;
   }
 };
@@ -1320,178 +1403,6 @@ function renderizarTabelasCalculo(idxPrincipal) {
 
 // ==================== MONTAGEM E EXPORTAÇÃO DO PDF OFICIAL ====================
 
-function montarLinhasEquipePdf(calc) {
-  const linhas = [];
-
-  const adicionarMembro = (rotulo, pessoa, valor) => {
-    if (!pessoa && valor <= 0) return;
-    const nomeExibir = pessoa?.nome ? pessoa.nome.toUpperCase() : "NÃO INFORMADO";
-    let docExibir = "";
-    if (pessoa) {
-      if (pessoa.tipo === "doutor") {
-        const croPart = pessoa.registro ? `CRO${pessoa.uf ? "/" + pessoa.uf.toUpperCase() : ""}: ${pessoa.registro}` : "";
-        const cpfPart = pessoa.cpf ? `CPF: ${pessoa.cpf}` : "";
-        docExibir = [croPart, cpfPart].filter(Boolean).join(" &nbsp;|&nbsp; ");
-      } else {
-        const corenPart = pessoa.registro ? `COREN: ${pessoa.registro}` : "";
-        const cpfPart = pessoa.cpf ? `CPF: ${pessoa.cpf}` : "";
-        docExibir = [corenPart, cpfPart].filter(Boolean).join(" &nbsp;|&nbsp; ");
-      }
-    }
-    linhas.push(`
-      <tr>
-        <td class="pdf-team-role">${rotulo}:</td>
-        <td class="pdf-team-name">${escaparHtml(nomeExibir)}</td>
-        <td class="pdf-team-reg">${docExibir || "-"}</td>
-        <td class="pdf-team-val">VALOR: ${formatarMoeda(valor)}</td>
-      </tr>
-    `);
-  };
-
-  adicionarMembro("CIRURGIÃO", equipeSelecionada.cirurgiao, calc.totCirurgiao);
-  if (equipeSelecionada.aux1 || calc.totAux1 > 0) {
-    adicionarMembro("1º AUXILIAR", equipeSelecionada.aux1, calc.totAux1);
-  }
-  if (equipeSelecionada.aux2 || calc.totAux2 > 0) {
-    adicionarMembro("2º AUXILIAR", equipeSelecionada.aux2, calc.totAux2);
-  }
-  if (equipeSelecionada.instrumentador || calc.totInst > 0) {
-    adicionarMembro("INSTRUMENTADOR(A)", equipeSelecionada.instrumentador, calc.totInst);
-  }
-
-  return linhas.join("");
-}
-
-function construirHtmlDocumentoPdf(calc) {
-  const dataAtualStr = new Date().toLocaleDateString("pt-BR");
-
-  const linhasTabela1Html = calc.linhasCalculadas.map(l => `
-    <tr>
-      <td class="pdf-col-code">${escaparHtml(l.codigo)}</td>
-      <td class="pdf-col-desc">${escaparHtml(l.nome.toUpperCase())}</td>
-      <td class="pdf-col-center">${l.qtd_cod}</td>
-      <td class="pdf-col-center">${l.quant_aux}</td>
-      <td class="pdf-col-right">${formatarNumero(l.qtd_us, 2, 2)}</td>
-      <td class="pdf-col-right">${formatarNumero(l.valor_us, 2, 6)}</td>
-      <td class="pdf-col-center">${formatarNumero(l.multiplo, 0, 4)}</td>
-      <td class="pdf-col-center">${formatarNumero(l.percentual * 100, 0, 2)}%</td>
-    </tr>
-  `).join("");
-
-  const linhasTabela2Html = calc.linhasCalculadas.map(l => `
-    <tr>
-      <td class="pdf-col-code">${escaparHtml(l.codigo)}</td>
-      <td class="pdf-col-center">${l.qtd_cod}</td>
-      <td class="pdf-col-right">${formatarMoeda(l.cirurgiao)}</td>
-      <td class="pdf-col-right">${formatarMoeda(l.aux1)}</td>
-      <td class="pdf-col-right">${formatarMoeda(l.aux2)}</td>
-      <td class="pdf-col-right">${formatarMoeda(l.instrumentador)}</td>
-    </tr>
-  `).join("");
-
-  const equipeHtml = montarLinhasEquipePdf(calc);
-
-  return `
-    <div class="pdf-doc-header">
-      <h1>RELATÓRIO EXPLICATIVO DE ORÇAMENTO PARA CIRURGIA HOSPITALAR</h1>
-    </div>
-
-    <table class="pdf-patient-grid">
-      <tr>
-        <td style="width: 58%;">
-          <span class="pdf-field-label">Paciente</span>
-          <span class="pdf-field-value">${escaparHtml(calc.paciente.toUpperCase())}</span>
-        </td>
-        <td style="width: 42%;">
-          <span class="pdf-field-label">Cartão</span>
-          <span class="pdf-field-value">${escaparHtml(calc.cartao || "-")}</span>
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <span class="pdf-field-label">Plano</span>
-          <span class="pdf-field-value">${escaparHtml(calc.plano.toUpperCase())}</span>
-        </td>
-        <td>
-          <span class="pdf-field-label">Múltiplo / Valor US/URS/CRS</span>
-          <span class="pdf-field-value">${formatarNumero(calc.multiploReal, 0, 4)} &nbsp;/&nbsp; ${formatarNumero(calc.valorUsReal, 2, 6)}</span>
-        </td>
-      </tr>
-    </table>
-
-    <div class="pdf-intro-box">
-      <p>Em casos de procedimentos e/ou exames diversos no mesmo evento médico, o cálculo dos demais procedimentos deve seguir o percentual previsto nas Condições Gerais da Tabela. O valor apurado pode incidir coparticipação, se houver.</p>
-      <p>Com base nas informações sobre valores de coeficientes e múltiplos de reembolso fornecidos pela operadora Bradesco Saúde através do site <strong>https://www.bradescosaude.com.br</strong>; este orçamento foi emitido com base na seguinte fórmula: <strong>Valor US/URS/CRS x Quantidade US/URS/CRS x Múltiplo de Reembolso = Valor a ser reembolsado.</strong></p>
-    </div>
-
-    <div class="pdf-table-block">
-      <div class="pdf-section-title">PROCEDIMENTO(S) SOLICITADO(S)</div>
-      <table class="pdf-data-table">
-        <thead>
-          <tr>
-            <th style="width: 11%;">CÓDIGO</th>
-            <th class="col-desc-header" style="width: 35%;">DESCRIÇÃO</th>
-            <th style="width: 7%;">QTD<br>COD</th>
-            <th style="width: 7%;">QTD<br>AUX</th>
-            <th style="width: 12%;">QTD<br>US/URS/CRS</th>
-            <th style="width: 11%;">VALOR<br>US/URS/CRS</th>
-            <th style="width: 10%;">MÚLTIPLO<br>REEMB.</th>
-            <th style="width: 7%;">(%)</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${linhasTabela1Html}
-        </tbody>
-      </table>
-    </div>
-
-    ${HTML_GLOSSARIO_E_NORMAS}
-
-    <div class="pdf-table-block">
-      <div class="pdf-section-title">CÁLCULO EXATO DO REEMBOLSO BASEADO NAS INFORMAÇÕES FORNECIDAS PELA OPERADORA</div>
-      <table class="pdf-data-table">
-        <thead>
-          <tr>
-            <th style="width: 15%;">CÓDIGO</th>
-            <th style="width: 13%;">Q. COD<br>AUTORIZADO</th>
-            <th style="width: 18%;">CIRURGIÃO</th>
-            <th style="width: 18%;">AUXILIAR 1 (30%)</th>
-            <th style="width: 18%;">AUXILIAR 2 (20%)</th>
-            <th style="width: 18%;">INSTRUMENTADOR (10%)</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${linhasTabela2Html}
-          <tr class="pdf-row-subtotal">
-            <td colspan="2" class="pdf-col-center">TOTAL</td>
-            <td class="pdf-col-right">${formatarMoeda(calc.totCirurgiao)}</td>
-            <td class="pdf-col-right">${formatarMoeda(calc.totAux1)}</td>
-            <td class="pdf-col-right">${formatarMoeda(calc.totAux2)}</td>
-            <td class="pdf-col-right">${formatarMoeda(calc.totInst)}</td>
-          </tr>
-          <tr class="pdf-row-grandtotal">
-            <td colspan="5" style="text-align: right; padding-right: 12px;">TOTAL GERAL DO ORÇAMENTO</td>
-            <td class="pdf-col-right">${formatarMoeda(calc.totalGeral)}</td>
-          </tr>
-        </tbody>
-      </table>
-      ${equipeHtml ? `
-        <div class="pdf-team-box">
-          <table class="pdf-team-table">
-            ${equipeHtml}
-          </table>
-        </div>
-      ` : ""}
-    </div>
-
-    ${HTML_CONDICOES_GERAIS_BRADESCO}
-
-    <div style="margin-top: 14px; font-weight: 700; font-size: 9pt; color: #0f172a;">
-      RECIFE ${dataAtualStr}
-    </div>
-  `;
-}
-
 function gerarNomeArquivoPdf(paciente) {
   const nomeLimpo = (paciente || "REEMBOLSO")
     .toUpperCase()
@@ -1734,7 +1645,6 @@ document.getElementById("btnGerarPdf").addEventListener("click", () => {
   const pdfBlob = gerarBlobPdfVetorial(calc);
   const urlBlob = URL.createObjectURL(pdfBlob);
 
-  // Remove iframe anterior se existir
   const antigoIframe = document.getElementById("iframePrintPdfVetorial");
   if (antigoIframe) antigoIframe.remove();
 
@@ -1756,7 +1666,6 @@ document.getElementById("btnGerarPdf").addEventListener("click", () => {
         iframePrint.contentWindow.focus();
         iframePrint.contentWindow.print();
       } catch (e) {
-        // Fallback para Safari/iPad caso bloqueie impressão via iframe
         window.open(urlBlob, "_blank");
       }
     }, 250);

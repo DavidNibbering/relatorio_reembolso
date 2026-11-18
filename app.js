@@ -1363,6 +1363,8 @@ function montarLinhasEquipePdf(calc) {
 }
 
 function construirHtmlDocumentoPdf(calc) {
+  const dataAtualStr = new Date().toLocaleDateString("pt-BR");
+
   const linhasTabela1Html = calc.linhasCalculadas.map(l => `
     <tr>
       <td class="pdf-col-code">${escaparHtml(l.codigo)}</td>
@@ -1483,6 +1485,10 @@ function construirHtmlDocumentoPdf(calc) {
     </div>
 
     ${HTML_CONDICOES_GERAIS_BRADESCO}
+
+    <div style="margin-top: 14px; font-weight: 700; font-size: 9pt; color: #0f172a;">
+      RECIFE ${dataAtualStr}
+    </div>
   `;
 }
 
@@ -1599,16 +1605,16 @@ function gerarBlobPdfVetorial(calc) {
   });
   y = docPdf.lastAutoTable.finalY + 5;
 
-  // Glossário Resumido
+  // Glossário Completo
   docPdf.setFont("helvetica", "bold");
   docPdf.setFontSize(7.8);
   docPdf.setTextColor(27, 54, 93);
-  docPdf.text("CRS (Coeficiente de Reembolso de Seguros), URS (Unidade de Reembolso de Seguros), US (Unidade de Serviço):", margem, y);
+  docPdf.text("CRS (Coeficiente de Reembolso de Seguros), URS (Unidade de Reembolso de Seguros), US (Unidade de Serviço).", margem, y);
   y += 3.8;
   docPdf.setFont("helvetica", "normal");
   docPdf.setFontSize(7.5);
   docPdf.setTextColor(51, 65, 85);
-  const glossario = "- Valor US/URS/CRS: unidade expressa em moeda corrente conforme o plano contratado. - Quantidade de US/URS/CRS: prevista na tabela de reembolso para cada procedimento. - Múltiplo de reembolso: fator multiplicador do plano. - Valores limites de reembolso: resultado da multiplicação do valor US/URS/CRS, quantidade e múltiplo.";
+  const glossario = "- Valor US/URS/CRS: unidades expressas em moeda corrente, utilizadas como base para determinar os limites de reembolso das despesas médicas ou de natureza hospitalar, objeto das Condições Gerais. O valor da moeda varia de acordo com o tipo de plano contratado.\n- Quantidade de US/URS/CRS: prevista na tabela de reembolso de honorários e serviços médicos para cada procedimento.\n- Múltiplo de reembolso: é o fator multiplicador do plano contratado.\n- Valores limites de reembolso: é o resultado da multiplicação do valor US/URS/CRS, quantidade de US/URS/CRS e múltiplo de Reembolso.";
   const linhasGloss = docPdf.splitTextToSize(glossario, larguraUtil);
   docPdf.text(linhasGloss, margem, y);
   y += linhasGloss.length * 3.4 + 5;
@@ -1693,14 +1699,14 @@ function gerarBlobPdfVetorial(calc) {
     y = docPdf.lastAutoTable.finalY + 5;
   }
 
-  // Normas Bradesco Saúde (com quebra automática de página e margem superior garantida)
+  // Condições Gerais Bradesco Saúde (texto exato após o link da Bradesco)
   const normasTexto = [
-    "ORIENTAÇÕES SOBRE CÁLCULOS CONFORME DADOS FORNECIDOS PELA OPERADORA BRADESCO SAÚDE (HTTPS://WWW.BRADESCOSAUDE.COM.BR):",
-    "1. TABELA: 1.1. Esta Tabela estabelece os valores de referência para os procedimentos médicos cobertos, de acordo com as condições contratuais das apólices da Bradesco Saúde. 1.2. O Coeficiente de Reembolso de Seguros (CRS) representa a unidade básica para o cálculo desses valores. 1.3. A cada procedimento da Tabela, é atribuída uma quantidade de CRS. O valor do CRS é expresso em reais. 1.4. Para o cálculo do valor do procedimento em reais, multiplica-se a quantidade de CRS pelo valor do CRS vigente à época do evento.",
-    "2. ATENDIMENTO DE URGÊNCIA E EMERGÊNCIA: 2.1. Os atos médicos praticados em regime de urgência ou emergência terão um acréscimo de 30% nas seguintes condições: 2.1.1. No período compreendido entre 19h e 7h do dia seguinte; 2.1.2. Em qualquer horário nos sábados, domingos e feriados.",
-    "3. PROCEDIMENTOS CIRÚRGICOS - NORMAS GERAIS: 3.1. Os valores atribuídos a cada procedimento cirúrgico incluem os cuidados pós-operatórios até 10 dias após a data da cirurgia. A partir do 11º dia, quando houver necessidade, o acompanhamento passa a ser valorado de acordo com os critérios estabelecidos para as visitas hospitalares ou para as consultas em consultório. 3.2. Nos casos cirúrgicos em que se fizer necessário o acompanhamento ou assistência de outro especialista, seus honorários serão valorados de acordo com o atendimento prestado e previsto em Tabela na respectiva especialidade.",
-    "4. VALORAÇÃO DOS ATOS CIRÚRGICOS: 4.1. Quando previamente planejada ou quando for verificada, durante o ato cirúrgico, a indicação de intervenção em vários órgãos ou regiões a partir de uma mesma via de acesso, a valoração dos procedimentos corresponderá ao procedimento de maior valor - com base no valor do cirurgião -, acrescido de 50% do previsto para cada um dos demais atos médicos praticados, desde que não haja um código específico previsto para o conjunto. 4.2. Quando ocorrer mais de uma intervenção por diferentes vias de acesso, deve ser adicionado, ao procedimento de maior valor - com base no valor do cirurgião -, 70% do valor de cada um dos demais procedimentos realizados, desde que não haja código específico previsto para o conjunto. 4.3. Essas condições aplicam-se às cirurgias bilaterais, realizadas por diferentes incisões (70%) ou pela mesma incisão (50%), exceto se houver código específico previsto. 4.4. Quando duas equipes distintas realizarem simultaneamente atos cirúrgicos diferentes, a cada uma delas será atribuído o valor do procedimento realizado e previsto nesta Tabela. 4.5. Quando um ato cirúrgico for parte integrante de outro, valorar-se-á não o somatório do conjunto, mas exclusivamente o ato principal.",
-    "5. AUXILIARES: 5.1. Os honorários dos médicos auxiliares dos atos cirúrgicos serão fixados nas proporções de 30% dos honorários do cirurgião para o 1º auxiliar, 20% para os 2º e 3º auxiliares, desde que previstos em Tabela, e 10% para o(a) instrumentador(a) devidamente habilitado(a)."
+    "SEGUE ABAIXO ORIENTAÇÕES SOBRE CÁLCULOS CONFORME DADOS FORNECIDOS PELA OPERADORA BRADESCO SAÚDE ATRAVÉS DO SITE HTTPS://WWW.BRADESCOSAUDE.COM.BR:",
+    "1. TABELA\n1.1. Esta Tabela estabelece os valores de referência para os procedimentos médicos cobertos, de acordo com as condições contratuais das apólices da Bradesco Saúde.\n1.2. O Coeficiente de Reembolso de Seguros (CRS) representa a unidade básica para o cálculo desses valores.\n1.3. A cada procedimento da Tabela, é atribuída uma quantidade de CRS. O valor do CRS é expresso em reais.\n1.4. Para o cálculo do valor do procedimento em reais, multiplica-se a quantidade de CRS pelo valor do CRS vigente à época do evento.",
+    "2. ATENDIMENTO DE URGÊNCIA E EMERGÊNCIA\n2.1. Os atos médicos praticados em regime de urgência ou emergência terão um acréscimo de 30% nas seguintes condições:\n2.1.1. No período compreendido entre 19h e 7h do dia seguinte;\n2.1.2. Em qualquer horário nos sábados, domingos e feriados.\nTabela de Reembolso de Honorários e Serviços Médicos Produto Coletivo Empresarial Plano com mais de 100 vidas - posterior ou adaptado à Lei nº 9.656/98",
+    "3. PROCEDIMENTOS CIRÚRGICOS - NORMAS GERAIS\n3.1. Os valores atribuídos a cada procedimento cirúrgico incluem os cuidados pós-operatórios até 10 dias após a data da cirurgia. A partir do 11º dia, quando houver necessidade, o acompanhamento passa a ser valorado de acordo com os critérios estabelecidos para as visitas hospitalares ou para as consultas em consultório.\n3.2. Nos casos cirúrgicos em que se fizer necessário o acompanhamento ou assistência de outro especialista, seus honorários serão valorados de acordo com o atendimento prestado e previsto em Tabela na respectiva especialidade.",
+    "4. VALORAÇÃO DOS ATOS CIRÚRGICOS\n4.1. Quando previamente planejada ou quando for verificada, durante o ato cirúrgico, a indicação de intervenção em vários órgãos ou regiões a partir de uma mesma via de acesso, a valoração dos procedimentos corresponderá ao procedimento de maior valor - com base no valor do cirurgião -, acrescido de 50% do previsto para cada um dos demais atos médicos praticados, desde que não haja um código específico previsto para o conjunto.\n4.2. Quando ocorrer mais de uma intervenção por diferentes vias de acesso, deve ser adicionado, ao procedimento de maior valor - com base no valor do cirurgião -, 70% do valor de cada um dos demais procedimentos realizados, desde que não haja código específico previsto para o conjunto.\n4.3. Essas condições aplicam-se às cirurgias bilaterais, realizadas por diferentes incisões (70%) ou pela mesma incisão (50%), exceto se houver código específico previsto.\n4.4. Quando duas equipes distintas realizarem simultaneamente atos cirúrgicos diferentes, a cada uma delas será atribuído o valor do procedimento realizado e previsto nesta Tabela.\n4.5. Quando um ato cirúrgico for parte integrante de outro, valorar-se-á não o somatório do conjunto, mas exclusivamente o ato principal.",
+    "5. AUXILIARES\n5.1. Os honorários dos médicos auxiliares dos atos cirúrgicos serão fixados nas proporções de 30% dos honorários do cirurgião para o 1º auxiliar, 20% para os 2º e 3º auxiliares, desde que previstos em Tabela, e 10% para o(a) instrumentador(a) devidamente habilitado(a)."
   ];
 
   docPdf.setFontSize(7.4);
@@ -1709,13 +1715,25 @@ function gerarBlobPdfVetorial(calc) {
     docPdf.setTextColor(idx === 0 ? 27 : 51, idx === 0 ? 54 : 65, idx === 0 ? 93 : 85);
     const linhas = docPdf.splitTextToSize(paragrafo, larguraUtil);
     const alturaBloco = linhas.length * 3.3 + 2.5;
-    if (y + alturaBloco > 283) {
+    if (y + alturaBloco > 280) {
       docPdf.addPage();
       y = 14;
     }
     docPdf.text(linhas, margem, y);
     y += alturaBloco;
   });
+
+  // Local e Data atual no final, sem espaço para assinatura
+  if (y + 10 > 283) {
+    docPdf.addPage();
+    y = 14;
+  }
+  y += 4;
+  const dataAtualStr = new Date().toLocaleDateString("pt-BR");
+  docPdf.setFont("helvetica", "bold");
+  docPdf.setFontSize(8.5);
+  docPdf.setTextColor(15, 23, 42);
+  docPdf.text(`RECIFE ${dataAtualStr}`, margem, y);
 
   return docPdf.output("blob");
 }
@@ -1738,7 +1756,6 @@ document.getElementById("btnEnviarPdfWhatsapp").addEventListener("click", async 
   const nomeArquivo = gerarNomeArquivoPdf(calc.paciente);
 
   try {
-    // Geração síncrona e instantânea (mantém o gesto de toque ativo para o menu Compartilhar do iPad/celular)
     const pdfBlob = gerarBlobPdfVetorial(calc);
     const arquivoPdf = new File([pdfBlob], nomeArquivo, { type: "application/pdf" });
 

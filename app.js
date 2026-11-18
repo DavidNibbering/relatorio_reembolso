@@ -1538,26 +1538,24 @@ document.getElementById("btnEnviarPdfWhatsapp").addEventListener("click", async 
   const calc = ultimoCalculoCache;
   const nomeArquivo = gerarNomeArquivoPdf(calc.paciente);
 
-  const overlay = document.createElement("div");
-  overlay.style.position = "fixed";
-  overlay.style.inset = "0";
-  overlay.style.background = "#ffffff";
-  overlay.style.zIndex = "9998";
+  const scrollAnteriorX = window.scrollX;
+  const scrollAnteriorY = window.scrollY;
+  window.scrollTo(0, 0);
+
+  const mainContainer = document.querySelector(".container.no-print");
+  if (mainContainer) mainContainer.style.display = "none";
 
   const tempWrapper = document.createElement("div");
-  tempWrapper.style.position = "absolute";
-  tempWrapper.style.left = "0";
-  tempWrapper.style.top = "0";
+  tempWrapper.style.position = "relative";
   tempWrapper.style.width = "182mm";
+  tempWrapper.style.margin = "0 auto";
   tempWrapper.style.background = "#ffffff";
-  tempWrapper.style.zIndex = "9999";
   tempWrapper.className = "pdf-render-scope";
   tempWrapper.innerHTML = construirHtmlDocumentoPdf(calc);
 
-  document.body.appendChild(overlay);
   document.body.appendChild(tempWrapper);
 
-  await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 120)));
+  await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 150)));
 
   try {
     const opt = {
@@ -1570,6 +1568,7 @@ document.getElementById("btnEnviarPdfWhatsapp").addEventListener("click", async 
         logging: false,
         scrollX: 0,
         scrollY: 0,
+        windowWidth: 800,
         backgroundColor: "#ffffff"
       },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
@@ -1606,7 +1605,8 @@ document.getElementById("btnEnviarPdfWhatsapp").addEventListener("click", async 
     }
   } finally {
     if (tempWrapper.parentNode) document.body.removeChild(tempWrapper);
-    if (overlay.parentNode) document.body.removeChild(overlay);
+    if (mainContainer) mainContainer.style.display = "";
+    window.scrollTo(scrollAnteriorX, scrollAnteriorY);
     btn.disabled = false;
     btn.innerHTML = textoOriginal;
   }

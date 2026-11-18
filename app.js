@@ -1,6 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { HTML_GLOSSARIO_E_NORMAS, HTML_CONDICOES_GERAIS_BRADESCO } from "./normas.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC4XH3VcBpGiJfRVAN4YErIG0dGR2d1s6E",
@@ -51,7 +50,7 @@ let editandoSlot = {
 let tipoModalAtual = "doutor";
 let slotOrigemModal = "cirurgiao";
 
-// Estado dos Relatórios / Rascunhos Salvos
+// Estado dos Pacientes / Rascunhos Salvos
 let rascunhosSalvos = [];
 let rascunhoAtualId = null;
 
@@ -98,7 +97,7 @@ document.getElementById("cadCpf").addEventListener("input", (e) => {
   e.target.value = formatarCpf(e.target.value);
 });
 
-// ==================== CÁLCULO DE PORCENTAGEM E GRADIENTE (0% VERMELHO -> 100% VERDE) ====================
+// ==================== CÁLCULO DE PORCENTAGEM E GRADIENTE ====================
 
 function corGradientePorcentagem(pct) {
   const clamped = Math.max(0, Math.min(100, pct));
@@ -215,11 +214,48 @@ function atualizarPainelMeusGanhos() {
   }
 }
 
-document.getElementById("checkGanhoFixo350").addEventListener("change", () => {
+document.getElementById("checkGanhoFixo350")?.addEventListener("change", () => {
   atualizarPainelMeusGanhos();
 });
 
 // ==================== PERSISTÊNCIA DE PACIENTES NO FIREBASE ====================
+
+async function buscarColecaoRest(nomeColecao) {
+  const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${nomeColecao}?pageSize=500&key=${firebaseConfig.apiKey}`;
+  const resp = await fetch(url);
+  const json = await resp.json();
+  if (!resp.ok) {
+    throw new Error(json?.error?.message || `HTTP ${resp.status}`);
+  }
+  const lista = [];
+  (json.documents || []).forEach((docItem) => {
+    const f = docItem.fields || {};
+    const obj = { id: docItem.name.split("/").pop() };
+    Object.keys(f).forEach((k) => {
+      const c = f[k];
+      obj[k] = c?.stringValue
+        ?? (c?.booleanValue !== undefined ? Boolean(c.booleanValue) : undefined)
+        ?? (c?.doubleValue !== undefined ? Number(c.doubleValue) : (c?.integerValue !== undefined ? Number(c.integerValue) : ""));
+    });
+    lista.push(obj);
+  });
+  return lista;
+}
+
+async function carregarColecaoComFallback(nomeColecao) {
+  try {
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT_SDK")), 6000));
+    const snap = await Promise.race([getDocs(collection(db, nomeColecao)), timeout]);
+    const lista = [];
+    snap.forEach((docSnap) => {
+      lista.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    return lista;
+  } catch (err) {
+    console.warn(`Fallback REST para ${nomeColecao}:`, err.message);
+    return await buscarColecaoRest(nomeColecao);
+  }
+}
 
 async function carregarRascunhosSalvos() {
   try {
@@ -372,15 +408,6 @@ async function salvarPacienteNoFirebase(origemAutoCheck = false) {
   const multiplo = document.getElementById("multiploInput").value.trim();
   const valorUs = document.getElementById("valorUsInput").value.trim();
   const observacoes = document.getElementById("observacoesInput").value.trim();
-  document.getElementById("checkGanhoFixo350").checked = false;
-  document.getElementById("checkPdfEnviadoCirurgiao").checked = false;
-  document.getElementById("blocoCheckEnviado").classList.remove("concluido");
-  document.getElementById("statusCheckEnviado").innerText = "";
-  document.getElementById("checkGanhoFixo350").checked = Boolean(p.ganho_fixo_350 ?? item.ganho_fixo_350 ?? false);
-  const enviadoSalvo = Boolean(p.enviado ?? item.enviado ?? false);
-  document.getElementById("checkPdfEnviadoCirurgiao").checked = enviadoSalvo;
-  document.getElementById("blocoCheckEnviado").classList.toggle("concluido", enviadoSalvo);
-  document.getElementById("statusCheckEnviado").innerText = enviadoSalvo ? "✓ Já enviado ao cirurgião" : "";
   const enviado = document.getElementById("checkPdfEnviadoCirurgiao")?.checked || false;
   const ganhoFixo350 = document.getElementById("checkGanhoFixo350")?.checked || false;
 
@@ -458,7 +485,7 @@ document.getElementById("btnSalvarRascunho").addEventListener("click", () => {
   salvarPacienteNoFirebase(false);
 });
 
-document.getElementById("checkPdfEnviadoCirurgiao").addEventListener("change", async (e) => {
+document.getElementById("checkPdfEnviadoCirurgiao")?.addEventListener("change", async (e) => {
   const marcado = e.target.checked;
   const bloco = document.getElementById("blocoCheckEnviado");
   const statusCheck = document.getElementById("statusCheckEnviado");
@@ -475,7 +502,138 @@ document.getElementById("checkPdfEnviadoCirurgiao").addEventListener("change", a
   }
 });
 
-document.getElementById("buscaEnviadosInput").addEventListener("input", renderizarListaRascunhos);
+window.carregarRascunhoNoFormulario = (id) => {
+  const item = rascunhosSalvos.find(r => r.id === id);
+  if (!item) return;
+
+  const p = item.payload || {};
+  rascunhoAtualId = item.id;
+
+  document.getElementById("tagEditandoRascunho").classList.remove("hidden");
+  document.getElementById("textoBtnSalvarRascunho").innerText = "Atualizar Rascunho";
+  document.getElementById("statusRascunhoSalvo").innerText = `Editando relatório salvo de "${item.paciente}".`;
+
+  const selectPlano = document.getElementById("planoSelect");
+  selectPlano.value = p.plano || "";
+
+  if (selectPlano.value) {
+    procedimentosDoPlano = todosProcedimentos
+      .filter(proc => proc.plano === selectPlano.value)
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+    document.getElementById("cardDisponiveis").classList.remove("hidden");
+    renderizarDisponiveis();
+  } else {
+    procedimentosDoPlano = [];
+    document.getElementById("cardDisponiveis").classList.add("hidden");
+  }
+
+  document.getElementById("pacienteInput").value = p.paciente || "";
+  document.getElementById("cartaoInput").value = p.cartao || "";
+  document.getElementById("multiploInput").value = p.multiplo || "1";
+  document.getElementById("valorUsInput").value = p.valorUs || "";
+  document.getElementById("observacoesInput").value = p.observacoes ?? item.observacoes ?? "";
+
+  const checkFixo = document.getElementById("checkGanhoFixo350");
+  if (checkFixo) {
+    checkFixo.checked = Boolean(p.ganho_fixo_350 ?? item.ganho_fixo_350 ?? false);
+  }
+
+  const enviadoSalvo = Boolean(p.enviado ?? item.enviado ?? false);
+  const checkEnv = document.getElementById("checkPdfEnviadoCirurgiao");
+  const blocoEnv = document.getElementById("blocoCheckEnviado");
+  const statusEnv = document.getElementById("statusCheckEnviado");
+  if (checkEnv) checkEnv.checked = enviadoSalvo;
+  if (blocoEnv) blocoEnv.classList.toggle("concluido", enviadoSalvo);
+  if (statusEnv) statusEnv.innerText = enviadoSalvo ? "✓ Já enviado ao cirurgião" : "";
+
+  equipeSelecionada = {
+    cirurgiao: p.equipe?.cirurgiao || null,
+    aux1: p.equipe?.aux1 || null,
+    aux2: p.equipe?.aux2 || null,
+    instrumentador: p.equipe?.instrumentador || null
+  };
+  editandoSlot = {
+    cirurgiao: false,
+    aux1: false,
+    aux2: false,
+    instrumentador: false
+  };
+
+  ["cirurgiao", "aux1", "aux2", "instrumentador"].forEach((slot) => {
+    const pessoa = equipeSelecionada[slot];
+    document.getElementById(`busca_${slot}`).value = pessoa ? pessoa.nome : "";
+    renderizarBoxEdicaoSlot(slot);
+  });
+
+  procedimentosSelecionados = Array.isArray(p.procedimentos) ? p.procedimentos : [];
+  uidPrincipalManual = p.uidPrincipalManual ?? null;
+  percentuaisCustomizados = p.percentuaisCustomizados || {};
+
+  atualizarTudo();
+  renderizarListaRascunhos();
+  window.scrollTo({ top: document.getElementById("planoSelect").offsetTop - 90, behavior: "smooth" });
+};
+
+window.excluirRascunho = async (id) => {
+  const item = rascunhosSalvos.find(r => r.id === id);
+  if (!item) return;
+  if (!confirm(`Deseja excluir o relatório salvo de "${item.paciente}"?`)) return;
+
+  try {
+    await deleteDoc(doc(db, "reembolsos", id));
+    if (rascunhoAtualId === id) {
+      limparFormularioParaNovo();
+    }
+    await carregarRascunhosSalvos();
+  } catch (e) {
+    console.error("Erro ao excluir rascunho:", e);
+    alert("Erro ao excluir: " + e.message);
+  }
+};
+function limparFormularioParaNovo() {
+  rascunhoAtualId = null;
+  document.getElementById("tagEditandoRascunho").classList.add("hidden");
+  document.getElementById("textoBtnSalvarRascunho").innerText = "Salvar Rascunho";
+  document.getElementById("statusRascunhoSalvo").innerText = "";
+
+  document.getElementById("planoSelect").value = "";
+  document.getElementById("pacienteInput").value = "";
+  document.getElementById("cartaoInput").value = "";
+  document.getElementById("multiploInput").value = "1";
+  document.getElementById("valorUsInput").value = "";
+  document.getElementById("observacoesInput").value = "";
+
+  const checkFixo = document.getElementById("checkGanhoFixo350");
+  if (checkFixo) checkFixo.checked = false;
+
+  const checkEnv = document.getElementById("checkPdfEnviadoCirurgiao");
+  const blocoEnv = document.getElementById("blocoCheckEnviado");
+  const statusEnv = document.getElementById("statusCheckEnviado");
+  if (checkEnv) checkEnv.checked = false;
+  if (blocoEnv) blocoEnv.classList.remove("concluido");
+  if (statusEnv) statusEnv.innerText = "";
+
+  equipeSelecionada = { cirurgiao: null, aux1: null, aux2: null, instrumentador: null };
+  editandoSlot = { cirurgiao: false, aux1: false, aux2: false, instrumentador: false };
+  ["cirurgiao", "aux1", "aux2", "instrumentador"].forEach((slot) => {
+    document.getElementById(`busca_${slot}`).value = "";
+    document.getElementById(`edit_${slot}`).innerHTML = "";
+  });
+
+  procedimentosDoPlano = [];
+  procedimentosSelecionados = [];
+  uidPrincipalManual = null;
+  percentuaisCustomizados = {};
+  document.getElementById("cardDisponiveis").classList.add("hidden");
+
+  atualizarTudo();
+  renderizarListaRascunhos();
+}
+
+document.getElementById("btnNovoRelatorio").addEventListener("click", limparFormularioParaNovo);
+document.getElementById("btnAtualizarRascunhos").addEventListener("click", carregarRascunhosSalvos);
+document.getElementById("buscaRascunhoInput").addEventListener("input", renderizarListaRascunhos);
+document.getElementById("buscaEnviadosInput")?.addEventListener("input", renderizarListaRascunhos);
 
 // ==================== CARREGAMENTO INICIAL ====================
 
@@ -505,7 +663,7 @@ async function inicializarDados() {
 
   select.innerHTML = `<option value="">Carregando planos...</option>`;
   status.className = "status";
-  status.innerText = "Buscando planos, profissionais e rascunhos no Firebase...";
+  status.innerText = "Buscando planos, profissionais e pacientes no Firebase...";
 
   try {
     const [registros] = await Promise.all([
@@ -514,13 +672,11 @@ async function inicializarDados() {
       carregarRascunhosSalvos()
     ]);
 
-    const planosUnicos = new Set();
     todosProcedimentos = [];
 
     registros.forEach((dados) => {
       if (dados && dados.plano) {
         const nomePlano = String(dados.plano).trim();
-        planosUnicos.add(nomePlano);
         const auxRaw = Number(dados.quant_aux);
         const auxNormalizado = isNaN(auxRaw) ? 0 : Math.min(2, Math.max(0, Math.round(auxRaw)));
         todosProcedimentos.push({
@@ -535,16 +691,15 @@ async function inicializarDados() {
       }
     });
 
-    const listaPlanos = Array.from(planosUnicos).sort();
+    atualizarSelectPlanosELista();
 
+    const listaPlanos = Array.from(new Set(todosProcedimentos.map(p => p.plano).filter(Boolean))).sort();
     if (listaPlanos.length === 0) {
       select.innerHTML = `<option value="">Nenhum plano cadastrado no Firebase</option>`;
       status.innerText = `Conexão OK, mas nenhum procedimento foi encontrado na coleção "procedimentos".`;
       return;
     }
 
-    select.innerHTML = `<option value="">Selecione um plano de saúde...</option>` +
-      listaPlanos.map(plano => `<option value="${plano}">${plano}</option>`).join("");
     status.innerText = `${listaPlanos.length} plano(s) carregado(s) (${todosProcedimentos.length} procedimentos).`;
 
   } catch (e) {
@@ -643,7 +798,6 @@ function obterCamposFaltantesProfissional(p) {
     if (!p.uf || !p.uf.trim()) faltando.push("UF");
     if (!p.cpf || !p.cpf.trim()) faltando.push("CPF");
   } else {
-    // Para instrumentador, COREN é opcional; Nome e CPF são obrigatórios
     if (!p.cpf || !p.cpf.trim()) faltando.push("CPF");
   }
 
@@ -665,7 +819,6 @@ function renderizarBoxEdicaoSlot(slot) {
     ? `<div class="summary-missing">⚠ Falta preencher: ${escaparHtml(faltando.join(", "))}</div>`
     : "";
 
-  // MODO 1: Resumo compacto (padrão ao selecionar)
   if (!editandoSlot[slot]) {
     const linhaRegistro = ehDoutor
       ? `CRO${p.uf ? "-" + p.uf.toUpperCase() : ""}: ${p.registro ? escaparHtml(p.registro) : '<span style="color:#dc2626;">Não inf.</span>'}`
@@ -692,7 +845,6 @@ function renderizarBoxEdicaoSlot(slot) {
     return;
   }
 
-  // MODO 2: Formulário de edição aberto
   const optionsUf = UFS_BRASIL.map(uf => `<option value="${uf}" ${p.uf === uf ? "selected" : ""}>${uf}</option>`).join("");
 
   container.innerHTML = `
@@ -870,7 +1022,7 @@ window.salvarNovoProfissional = async () => {
   }
 };
 
-// ==================== PROCEDIMENTOS E CÁLCULO ====================
+// ==================== PROCEDIMENTOS (LISTA, CADASTRO, EDIÇÃO) ====================
 
 function aoMudarPlano() {
   const plano = document.getElementById("planoSelect").value;
@@ -1033,7 +1185,6 @@ window.salvarProcedimentoModal = async () => {
         };
       }
 
-      // Atualiza também se já estiver adicionado na tabela de cálculo atual
       procedimentosSelecionados.forEach((sel) => {
         if (sel.id === idEdicao) {
           sel.plano = plano;
@@ -1165,6 +1316,7 @@ window.atualizarPercentualLinha = (chaveLinha, valorStr) => {
   if (pctNum >= 0) {
     percentuaisCustomizados[chaveLinha] = pctNum / 100;
     renderizarTabelasCalculo(obterIndicePrincipal());
+    atualizarPainelMeusGanhos();
   }
 };
 
@@ -1474,7 +1626,6 @@ function renderizarTabelasCalculo(idxPrincipal) {
 
   renderizarAlertas(linhasCalculadas, valorUsReal, multiploReal, paciente);
 
-  // Tabela 1: Procedimentos Solicitados
   tbodySol.innerHTML = linhasCalculadas.map(l => `
     <tr>
       <td><strong>${escaparHtml(l.codigo)}</strong></td>
@@ -1500,7 +1651,6 @@ function renderizarTabelasCalculo(idxPrincipal) {
     </tr>
   `).join("");
 
-  // Tabela 2: Cálculo Exato
   let totCirurgiao = 0;
   let totAux1 = 0;
   let totAux2 = 0;
@@ -1575,7 +1725,6 @@ function gerarBlobPdfVetorial(calc) {
   const larguraUtil = 210 - margem * 2;
   let y = 14;
 
-  // Cabeçalho Azul
   docPdf.setFillColor(27, 54, 93);
   docPdf.roundedRect(margem, y, larguraUtil, 11, 1.5, 1.5, "F");
   docPdf.setTextColor(255, 255, 255);
@@ -1584,7 +1733,6 @@ function gerarBlobPdfVetorial(calc) {
   docPdf.text("RELATÓRIO EXPLICATIVO DE ORÇAMENTO PARA CIRURGIA HOSPITALAR", 105, y + 7, { align: "center" });
   y += 14;
 
-  // Quadro de Dados do Paciente
   docPdf.autoTable({
     startY: y,
     margin: { left: margem, right: margem },
@@ -1604,7 +1752,6 @@ function gerarBlobPdfVetorial(calc) {
   });
   y = docPdf.lastAutoTable.finalY + 4;
 
-  // Texto Introdutório
   docPdf.setFont("helvetica", "normal");
   docPdf.setFontSize(8);
   docPdf.setTextColor(51, 65, 85);
@@ -1613,7 +1760,6 @@ function gerarBlobPdfVetorial(calc) {
   docPdf.text(linhasIntro, margem, y + 3);
   y += linhasIntro.length * 3.6 + 5;
 
-  // Tabela 1: Procedimentos Solicitados
   docPdf.setFont("helvetica", "bold");
   docPdf.setFontSize(8.5);
   docPdf.setTextColor(27, 54, 93);
@@ -1651,7 +1797,6 @@ function gerarBlobPdfVetorial(calc) {
   });
   y = docPdf.lastAutoTable.finalY + 5;
 
-  // Glossário Completo
   docPdf.setFont("helvetica", "bold");
   docPdf.setFontSize(7.8);
   docPdf.setTextColor(27, 54, 93);
@@ -1665,7 +1810,6 @@ function gerarBlobPdfVetorial(calc) {
   docPdf.text(linhasGloss, margem, y);
   y += linhasGloss.length * 3.4 + 5;
 
-  // Tabela 2: Cálculo Exato do Reembolso
   docPdf.setFont("helvetica", "bold");
   docPdf.setFontSize(8.5);
   docPdf.setTextColor(27, 54, 93);
@@ -1713,7 +1857,6 @@ function gerarBlobPdfVetorial(calc) {
   });
   y = docPdf.lastAutoTable.finalY + 3;
 
-  // Equipe Cirúrgica
   const linhasEquipe = [];
   const addMembro = (rotulo, p, val) => {
     if (!p && val <= 0) return;
@@ -1745,7 +1888,6 @@ function gerarBlobPdfVetorial(calc) {
     y = docPdf.lastAutoTable.finalY + 5;
   }
 
-  // Condições Gerais Bradesco Saúde
   const normasTexto = [
     "SEGUE ABAIXO ORIENTAÇÕES SOBRE CÁLCULOS CONFORME DADOS FORNECIDOS PELA OPERADORA BRADESCO SAÚDE ATRAVÉS DO SITE HTTPS://WWW.BRADESCOSAUDE.COM.BR:",
     "1. TABELA\n1.1. Esta Tabela estabelece os valores de referência para os procedimentos médicos cobertos, de acordo com as condições contratuais das apólices da Bradesco Saúde.\n1.2. O Coeficiente de Reembolso de Seguros (CRS) representa a unidade básica para o cálculo desses valores.\n1.3. A cada procedimento da Tabela, é atribuída uma quantidade de CRS. O valor do CRS é expresso em reais.\n1.4. Para o cálculo do valor do procedimento em reais, multiplica-se a quantidade de CRS pelo valor do CRS vigente à época do evento.",
@@ -1769,7 +1911,6 @@ function gerarBlobPdfVetorial(calc) {
     y += alturaBloco;
   });
 
-  // Local e Data atual no final
   if (y + 10 > 283) {
     docPdf.addPage();
     y = 14;
@@ -1784,7 +1925,6 @@ function gerarBlobPdfVetorial(calc) {
   return docPdf.output("blob");
 }
 
-// Botão "Imprimir Relatório" usando o EXATO mesmo PDF vetorial do WhatsApp
 document.getElementById("btnGerarPdf").addEventListener("click", () => {
   if (!ultimoCalculoCache || ultimoCalculoCache.linhasCalculadas.length === 0) {
     alert("Adicione pelo menos um procedimento antes de imprimir o relatório.");

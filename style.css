@@ -942,10 +942,9 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
 }
 
 @media print {
-  /* margin: 0 remove cabeçalhos e rodapés nativos do navegador (URL do github.io, data, título) */
   @page {
     size: A4 portrait;
-    margin: 0;
+    margin: 14mm;
   }
 
   body {
@@ -963,6 +962,6 @@ th { background: #f1f5f9; font-weight: 700; color: #334155; font-size: 0.8rem; t
 
   #printDocument {
     display: block !important;
-    padding: 14mm 14mm 14mm 14mm !important;
+    padding: 0 !important;
   }
 }
